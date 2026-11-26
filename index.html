@@ -1,0 +1,2181 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pipeline Testing Practice Lab</title>
+<style>
+:root{
+  --bg:#f6f7f9; --panel:#ffffff; --text:#1d2330; --muted:#5d6678; --line:#e1e5ec;
+  --accent:#0f6cbd; --accent-soft:#e6f0fa; --ok:#127a3c; --ok-soft:#e5f5eb; --bad:#b42318; --bad-soft:#fdecea;
+  --warn:#a35200; --warn-soft:#fdf1e3;
+  --code-bg:#0f1720; --code-text:#d6dde8;
+  --k:#7cc4ff; --s:#f2b880; --c:#7d8a9c; --d:#d7a6ff; --n:#9fe3a8; --t:#6fd6c9;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0e1116; --panel:#161b22; --text:#e3e8ef; --muted:#9aa4b2; --line:#2a313c;
+    --accent:#4ea1f3; --accent-soft:#16283c; --ok:#4cc27a; --ok-soft:#13281c; --bad:#ff7b72; --bad-soft:#2d1615;
+    --warn:#f0b450; --warn-soft:#2b2112;
+    --code-bg:#0a0d12;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0e1116; --panel:#161b22; --text:#e3e8ef; --muted:#9aa4b2; --line:#2a313c;
+  --accent:#4ea1f3; --accent-soft:#16283c; --ok:#4cc27a; --ok-soft:#13281c; --bad:#ff7b72; --bad-soft:#2d1615;
+  --warn:#f0b450; --warn-soft:#2b2112;
+  --code-bg:#0a0d12;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.6 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+code,pre,textarea{font-family:"Cascadia Code",Consolas,"SF Mono",Menlo,monospace}
+.app{display:grid;grid-template-columns:290px minmax(0,1fr);min-height:100vh}
+aside{background:var(--panel);border-right:1px solid var(--line);padding:20px 14px;position:sticky;top:0;height:100vh;overflow:auto}
+aside h1{font-size:18px;margin:0 8px 4px}
+aside .sub{color:var(--muted);font-size:13px;margin:0 8px 14px}
+.progress{height:6px;background:var(--line);border-radius:4px;margin:0 8px 6px;overflow:hidden}
+.progress>div{height:100%;background:var(--ok);width:0;transition:width .3s}
+.ptext{font-size:12px;color:var(--muted);margin:0 8px 14px}
+nav button{display:flex;gap:10px;align-items:center;width:100%;text-align:left;border:0;background:none;color:var(--text);
+  padding:8px 10px;border-radius:8px;cursor:pointer;font-size:14px}
+nav button:hover{background:var(--accent-soft)}
+nav button.active{background:var(--accent-soft);color:var(--accent);font-weight:600}
+nav .num{flex:0 0 24px;height:24px;border-radius:50%;border:1.5px solid var(--line);display:grid;place-items:center;font-size:12px;color:var(--muted)}
+nav button.done .num{background:var(--ok);border-color:var(--ok);color:#fff}
+nav .cnt{margin-left:auto;font-size:11px;color:var(--muted);font-weight:400}
+nav .group{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:14px 10px 4px}
+.sidefoot{margin:18px 8px 0;display:grid;gap:10px;justify-items:start}
+.sidefoot a{font-size:13px;color:var(--accent)}
+.theme{font-size:13px;background:none;border:1px solid var(--line);color:var(--muted);border-radius:8px;padding:6px 10px;cursor:pointer}
+main{padding:32px 40px 80px;max-width:980px;width:100%}
+.tag{display:inline-block;font-size:12px;color:var(--accent);background:var(--accent-soft);padding:2px 10px;border-radius:20px;margin-bottom:8px}
+h2{font-size:28px;margin:0 0 8px}
+h3{font-size:19px;margin:28px 0 8px}
+p{margin:8px 0}
+.lead{color:var(--muted);font-size:17px}
+:not(pre)>code{background:var(--accent-soft);padding:1px 6px;border-radius:5px;font-size:.9em;overflow-wrap:anywhere}
+.codewrap{position:relative;margin:12px 0}
+pre{background:var(--code-bg);color:var(--code-text);padding:16px 18px;border-radius:10px;overflow:auto;font-size:14px;line-height:1.55;margin:0}
+.file{font-size:12px;color:var(--muted);margin:12px 0 -6px;font-family:Consolas,monospace}
+.copy{position:absolute;top:8px;right:8px;font-size:12px;background:#ffffff1a;color:#cfd8e3;border:0;border-radius:6px;padding:4px 9px;cursor:pointer}
+.copy:hover{background:#ffffff33}
+.tk{color:var(--k)} .ts{color:var(--s)} .tc{color:var(--c);font-style:italic} .td{color:var(--d)} .tn{color:var(--n)} .tt{color:var(--t)}
+.tdash{color:var(--c)}
+ul.tips,ol.tips{padding-left:20px} .tips li{margin:4px 0}
+table.ref{border-collapse:collapse;width:100%;font-size:14px;margin:10px 0}
+table.ref th,table.ref td{border:1px solid var(--line);padding:6px 10px;text-align:left;vertical-align:top}
+table.ref th{background:var(--accent-soft);font-weight:600}
+.tablewrap{overflow-x:auto}
+.note{border-left:3px solid var(--accent);background:var(--accent-soft);padding:10px 14px;border-radius:0 8px 8px 0;margin:14px 0;font-size:15px}
+.note.exam{border-left-color:var(--warn);background:var(--warn-soft)}
+.exercise{margin-top:30px;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:22px}
+.exercise h3{margin-top:0;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.exercise h3 .kind{font-size:12px;font-weight:500;color:var(--muted);border:1px solid var(--line);border-radius:20px;padding:1px 10px}
+.exercise h3 .badge{font-size:12px;background:var(--ok);color:#fff;border-radius:20px;padding:2px 10px;display:none}
+.exercise.solved h3 .badge{display:inline-block}
+.exercise.solved{border-color:var(--ok)}
+textarea{width:100%;min-height:220px;background:var(--code-bg);color:var(--code-text);border:1px solid var(--line);border-radius:10px;
+  padding:14px;font-size:14px;line-height:1.55;resize:vertical;tab-size:2;outline:none;white-space:pre;overflow:auto}
+textarea.short{min-height:120px;white-space:pre-wrap}
+textarea:focus{border-color:var(--accent)}
+.edhelp{font-size:12px;color:var(--muted);margin:4px 0 0}
+.btns{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}
+.btn{border:1px solid var(--line);background:var(--panel);color:var(--text);padding:8px 16px;border-radius:8px;cursor:pointer;font-size:14px}
+.btn:hover{border-color:var(--accent)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+.btn.small{padding:2px 9px;font-size:13px}
+.results{list-style:none;padding:0;margin:10px 0}
+.results li{padding:6px 12px;border-radius:7px;margin:4px 0;font-size:14px}
+.results li.pass{background:var(--ok-soft);color:var(--ok)}
+.results li.fail{background:var(--bad-soft);color:var(--bad)}
+.results li .sub{display:block;font-size:13px;margin:2px 0 0 18px;opacity:.9}
+.hint{display:none;background:var(--accent-soft);padding:10px 14px;border-radius:8px;font-size:15px;margin:8px 0}
+.why{display:none;border-left:3px solid var(--ok);background:var(--ok-soft);padding:10px 14px;border-radius:0 8px 8px 0;margin:10px 0;font-size:15px}
+.solution{display:none;margin:10px 0}
+.solution .solhead{font-size:13px;color:var(--muted);font-weight:600;margin:0 0 6px}
+/* choice */
+.opts{display:grid;gap:8px;margin:12px 0}
+.opt{display:flex;gap:10px;align-items:flex-start;border:1px solid var(--line);border-radius:10px;padding:10px 12px;cursor:pointer;background:var(--bg)}
+.opt:hover{border-color:var(--accent)}
+.opt input{margin-top:5px;flex:0 0 auto}
+.opt.right{border-color:var(--ok);background:var(--ok-soft)}
+.opt.wrong{border-color:var(--bad);background:var(--bad-soft)}
+/* order */
+.order{list-style:none;padding:0;margin:12px 0;display:grid;gap:6px}
+.order li{display:flex;gap:10px;align-items:center;border:1px solid var(--line);border-radius:10px;padding:8px 10px;background:var(--bg)}
+.order li .pos{flex:0 0 24px;height:24px;border-radius:50%;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;font-size:12px;font-weight:600}
+.order li .txt{flex:1}
+.order li .mv{display:flex;gap:4px}
+.order li.right{border-color:var(--ok);background:var(--ok-soft)}
+.order li.wrong{border-color:var(--bad);background:var(--bad-soft)}
+/* match */
+.match{width:100%;border-collapse:collapse;margin:12px 0;font-size:15px}
+.match td{border-bottom:1px solid var(--line);padding:8px 6px;vertical-align:middle}
+.match td:first-child{width:58%}
+.match select{width:100%;padding:6px 8px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--text);font-size:14px}
+.match tr.right td{background:var(--ok-soft)}
+.match tr.wrong td{background:var(--bad-soft)}
+/* fill */
+.fill{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin:12px 0;line-height:2.3}
+.fill.mono{font-family:"Cascadia Code",Consolas,"SF Mono",Menlo,monospace;font-size:14px;white-space:pre-wrap;line-height:2.2}
+.fill input{font:inherit;font-size:14px;padding:2px 8px;border-radius:6px;border:1px solid var(--line);background:var(--panel);color:var(--text);min-width:90px}
+.fill input.right{border-color:var(--ok);background:var(--ok-soft)}
+.fill input.wrong{border-color:var(--bad);background:var(--bad-soft)}
+/* lines */
+.lines{background:var(--code-bg);border-radius:10px;padding:8px 0;margin:12px 0;overflow:auto}
+.lines .ln{display:flex;gap:12px;padding:2px 14px;cursor:pointer;color:var(--code-text);font-family:"Cascadia Code",Consolas,"SF Mono",Menlo,monospace;font-size:14px;white-space:pre;border-left:3px solid transparent}
+.lines .ln:hover{background:#ffffff12}
+.lines .ln .no{color:var(--c);user-select:none;min-width:20px;text-align:right}
+.lines .ln.sel{background:#f2b88026;border-left-color:var(--s)}
+.lines .ln.right{background:#4cc27a2e;border-left-color:var(--n)}
+.lines .ln.wrong{background:#ff7b7230;border-left-color:#ff7b72}
+.lines.prose .ln{font-family:inherit;white-space:normal}
+.navfoot{display:flex;justify-content:space-between;margin-top:30px}
+.menu{display:none}
+@media (max-width:820px){
+  .app{grid-template-columns:minmax(0,1fr)}
+  aside{position:fixed;inset:0 30% 0 0;z-index:5;transform:translateX(-105%);transition:transform .2s;height:100vh}
+  aside.open{transform:none;box-shadow:0 0 40px #0006}
+  main{padding:16px 16px 60px}
+  .menu{display:inline-block;margin-bottom:12px}
+  h2{font-size:23px}
+  .match td{display:block;width:100% !important;border:0;padding:4px 6px}
+  .match tr{display:block;border-bottom:1px solid var(--line);padding:6px 0}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside id="side">
+    <h1>Pipeline Testing Lab</h1>
+    <p class="sub">AZ-400 · 3.2 Testing strategy for pipelines</p>
+    <div class="progress"><div id="bar"></div></div>
+    <p class="ptext" id="ptext"></p>
+    <nav id="nav"></nav>
+    <div class="sidefoot">
+      <button class="theme" id="themeBtn">Toggle theme</button>
+      <button class="theme" id="resetAllBtn">Reset progress</button>
+      <a href="../azure-pipelines-tutorial/index.html">Open the Azure Pipelines Practice Lab</a>
+      <a href="../I.1%20-%20flow-of-work-trainer/index.html">Open the Flow of Work Practice Lab</a>
+    </div>
+  </aside>
+  <main>
+    <button class="btn menu" id="menuBtn">☰ Modules</button>
+    <div id="content"></div>
+  </main>
+</div>
+
+<script>
+/* ===================================================================
+   MODULE DATA
+   Exercise types (all share: id, title, q, hint, why):
+     mc     options[], answer: index
+     multi  options[], answer: [indexes]           (select all that apply)
+     order  items[] in the CORRECT order (shown shuffled)
+     match  rows: [[left html, correct choice]], choices[]
+     fill   tpl with [[0]], [[1]]… blanks, blanks: [[accepted…]]  (first = shown in solution)
+     lines  code: [lines], answer: [line indexes]  (click the faulty lines)
+     text   lang: "yaml" | "text", starter, checks: [{l, t: api => bool}], solution
+            yaml → api is the YAML query api (h, item, count, first, src)
+            text → api is { src, lines }
+   =================================================================== */
+const STEP = "**steps";   // matches steps[] at any depth (steps, jobs[].steps, stages[].jobs[].steps …)
+const COND_ALWAYS = /succeededOrFailed\(\)|always\(\)|not\(\s*canceled\(\)\s*\)/i;
+const GH_ALWAYS = /always\(\)|!\s*cancelled\(\)|success\(\)\s*\|\|\s*failure\(\)/i;
+const MODULES = [
+/* ================================================================ 1 */
+{
+  group:"Plan the strategy",
+  title:"Test types & the pyramid",
+  tag:"local · unit · integration · UI · smoke · load · shift-left",
+  intro:`A good testing strategy decides <b>which kinds of tests</b> you write, <b>how many</b> of each, and <b>where in the pipeline</b> each one runs. The goal is fast, reliable feedback: catch most defects with cheap tests early, and keep slow, brittle tests to a minimum.`,
+  sections:[
+    {h:"The test types you need to know", after:`<div class="tablewrap"><table class="ref">
+<tr><th>Type</th><th>What it checks</th><th>Speed / cost</th><th>Where it typically runs</th></tr>
+<tr><td><b>Local tests</b></td><td>Whatever the developer runs before pushing: unit tests, linters, pre-commit hooks</td><td>Seconds</td><td>Developer machine (and again in CI)</td></tr>
+<tr><td><b>Unit</b></td><td>One function or class in isolation, dependencies mocked or faked</td><td>Milliseconds each</td><td>Locally and in every PR / CI build</td></tr>
+<tr><td><b>Integration</b></td><td>Components working together: API + real database, message queue, another service</td><td>Seconds to minutes</td><td>CI build with containers, or after deploying to a test environment</td></tr>
+<tr><td><b>UI / end-to-end</b></td><td>A user journey through the real UI (Selenium, Playwright, Appium)</td><td>Slow, most brittle</td><td>After deploying to a test or staging environment</td></tr>
+<tr><td><b>Smoke</b></td><td>A few critical checks that the deployed app is alive: home page 200, login works</td><td>Very quick</td><td>Right after every deployment, including production</td></tr>
+<tr><td><b>Load / stress</b></td><td>Behaviour under expected load (load) or beyond it until it breaks (stress)</td><td>Minutes, needs infrastructure</td><td>Production-like staging environment, before release</td></tr>
+</table></div>`},
+    {h:"The test pyramid", lang:"text", code:`            /\\        few     UI / end-to-end tests   (slow, brittle, expensive)
+           /  \\
+          /----\\              integration / service / API tests
+         /      \\
+        /--------\\   many    unit tests              (fast, isolated, cheap)
+       /__________\\`,
+     p:`Push each check down to the <b>lowest level</b> that can catch it. A suite shaped like an upside-down pyramid (an "ice-cream cone": mostly UI tests and manual regression) is slow and flaky, and it blocks frequent releases.`},
+    {h:"Shift left", p:`<b>Shift-left testing</b> moves testing earlier in the lifecycle: developers write tests with the code, run them locally, and every pull request runs them automatically. Microsoft's own taxonomy sorts tests by what they depend on:`,
+     after:`<div class="tablewrap"><table class="ref">
+<tr><th>Level</th><th>Description</th></tr>
+<tr><td><b>L0</b></td><td>Fast, in-memory unit tests: depend only on the code under test</td></tr>
+<tr><td><b>L1</b></td><td>Unit tests that may need the assembly plus SQL or the file system</td></tr>
+<tr><td><b>L2</b></td><td>Functional tests against a testable service deployment</td></tr>
+<tr><td><b>L3</b></td><td>Restricted integration tests against production</td></tr>
+</table></div><p>L0/L1 run in pull requests and CI; L2 runs after a deployment to a test environment; L3 runs in production as part of the rollout.</p>`}
+  ],
+  tip:`"Tests are slow and flaky, mostly UI" → move logic checks down to <b>unit tests</b> (fix the pyramid). "Verify the deployment worked" → <b>smoke tests</b> right after deploy. "Will it handle Black Friday traffic?" → <b>load test</b> in a production-like environment. "Catch bugs before code is merged" → shift left: unit tests in a <b>PR build validation</b>.`,
+  exercises:[
+    {id:"ts1", type:"match", title:"Name that test",
+     q:`Match each description to the type of test.`,
+     choices:["Unit","Integration","UI / end-to-end","Smoke","Load","Stress"],
+     rows:[
+       ["Checks one pricing method's logic with the repository mocked; runs in milliseconds","Unit"],
+       ["Checks that the orders API can really read and write the SQL database schema","Integration"],
+       ["Drives a browser through search → cart → checkout with Playwright","UI / end-to-end"],
+       ["Three quick checks right after deployment: home page returns 200, login works, health endpoint is green","Smoke"],
+       ["Simulates 5,000 concurrent users to confirm average response time stays under 300 ms","Load"],
+       ["Keeps adding users beyond the expected peak to find where the system breaks","Stress"]
+     ],
+     hint:`Load = expected volume. Stress = beyond it. Smoke = "is it alive?" after a deployment.`,
+     why:`Unit tests isolate a single unit with fakes. Integration tests use real dependencies. UI tests go through the user interface. Smoke tests are a short sanity check of a fresh deployment. Load tests check performance at the expected load; stress tests push past it to find the breaking point and see how the system fails.`},
+    {id:"ts2", type:"order", title:"Build the pyramid",
+     q:`Order these from the kind of test you should have the <b>most</b> of to the kind you should have the <b>fewest</b> of.`,
+     items:[
+       "Unit tests",
+       "Integration / service (API) tests",
+       "Automated UI / end-to-end tests",
+       "Manual exploratory testing sessions"
+     ],
+     hint:`The wide base is the cheapest, fastest kind of test.`,
+     why:`Unit tests form the base: fast, isolated and cheap to maintain. Integration tests sit in the middle. UI tests are the narrow top because they are slow and brittle. Manual exploratory testing still has a place for finding unexpected issues, but it shouldn't carry your regression testing.`},
+    {id:"ts3", type:"mc", title:"The ice-cream cone",
+     q:`A team's regression suite has 40 unit tests and 900 Selenium UI tests. The suite takes three hours and fails randomly about once a day, so releases are delayed. What should they change first?`,
+     options:[
+       "Buy more parallel jobs so the UI suite runs faster",
+       "Rewrite most business-rule checks as unit and API tests, and keep a small set of critical UI journeys",
+       "Move the UI tests to a nightly run and stop running tests in pull requests",
+       "Mark every failing UI test as flaky so the pipeline stays green"
+     ], answer:1,
+     hint:`The shape of the suite is the problem, not the hardware.`,
+     why:`The suite is an inverted pyramid. Moving checks down to unit and API tests makes feedback fast and reliable. Keep only a few end-to-end journeys at the top. More agents only hide the cost. Hiding failures as flaky, or no longer testing pull requests, lowers quality.`},
+    {id:"ts4", type:"match", title:"Where does it run?",
+     q:`Match each test to the point in the delivery process where it belongs.`,
+     choices:["On the developer machine and in every PR / CI build","After deploying to a test or staging environment","Immediately after every deployment, including production"],
+     rows:[
+       ["L0 unit tests for the domain model","On the developer machine and in every PR / CI build"],
+       ["L2 functional tests that call the deployed API","After deploying to a test or staging environment"],
+       ["Smoke test: health endpoint and login page","Immediately after every deployment, including production"],
+       ["A 30-minute load test with 2,000 virtual users","After deploying to a test or staging environment"],
+       ["Linting and fast unit tests in a pre-commit hook","On the developer machine and in every PR / CI build"]
+     ],
+     hint:`Anything that needs a running deployment can't run before something is deployed.`,
+     why:`Fast tests with no external dependencies run as early as possible: locally and in every pull request. Tests that need a deployed system (L2 functional tests, UI tests, load tests) run after a deployment to a test or staging environment. Smoke tests run after <i>every</i> deployment so you know each environment works.`},
+    {id:"ts5", type:"multi", title:"What shift-left means",
+     q:`Which practices are examples of <b>shift-left</b> testing? <i>Select all that apply.</i>`,
+     options:[
+       "Developers write unit tests together with the code change",
+       "Every pull request runs the unit tests before it can be merged",
+       "A QA team runs a two-week manual regression cycle before each release",
+       "Developers run the fast tests locally (or in a pre-commit hook) before pushing",
+       "Only test in production, using customer bug reports",
+       "Keep unit tests fast and reliable so they can run on every change"
+     ], answer:[0,1,3,5],
+     hint:`Shift left = earlier and more often, close to where the code is written.`,
+     why:`Shift-left moves quality checks toward the developer and the pull request, so defects are found when they are cheapest to fix. A long manual regression phase at the end is the opposite (testing late). Production signals still matter ("shift right"), but they don't replace early testing.`}
+  ]
+},
+/* ================================================================ 2 */
+{
+  group:"Quality & release gates",
+  title:"Quality gates on pull requests",
+  tag:"build validation · status checks · SonarQube quality gates",
+  intro:`A <b>quality gate</b> is an automated pass/fail decision that code must pass before it can move on. The first and most important gate is the <b>pull request</b>: nothing reaches <code>main</code> until the build, the tests and the code-quality checks are green.`,
+  sections:[
+    {h:"Build validation (Azure Repos)", p:`In Azure Repos, a <b>build validation</b> branch policy queues a pipeline for every pull request into the protected branch. Its settings:`,
+     after:`<div class="tablewrap"><table class="ref">
+<tr><th>Setting</th><th>Options</th></tr>
+<tr><td><b>Trigger</b></td><td>Automatic (when the source branch is updated) or Manual</td></tr>
+<tr><td><b>Policy requirement</b></td><td>Required (the PR can't complete unless the build succeeds) or Optional (result shown, not enforced)</td></tr>
+<tr><td><b>Build expiration</b></td><td>Immediately when the target branch is updated · after <i>n</i> hours if it was updated · Never</td></tr>
+<tr><td><b>Path filter</b></td><td>Only run when files matching the filter change, e.g. <code>/src/api/*</code></td></tr>
+</table></div>
+<p><b>Important:</b> for repositories in <b>Azure Repos</b>, the YAML <code>pr:</code> trigger is ignored. PR builds come from the build validation policy. For <b>GitHub</b> (and Bitbucket Cloud) repositories, the YAML <code>pr:</code> trigger <i>is</i> used.</p>`},
+    {h:"PR trigger for a GitHub repository", code:`pr:
+  branches:
+    include:
+      - main
+      - release/*
+  paths:
+    exclude:
+      - docs/*`},
+    {h:"Status checks from other tools", p:`External services (SonarQube, code coverage, security scanners) post a <b>status</b> to the pull request. In Azure Repos, a <b>Status check</b> branch policy can make a status required. In GitHub, add it under <b>Require status checks to pass</b> in a branch protection rule or ruleset.`},
+    {h:"Code quality gates with SonarQube", p:`SonarQube Server and SonarQube Cloud (formerly SonarCloud) analyse each build and evaluate a <b>quality gate</b>: a set of conditions, usually on <b>new code</b>, such as coverage, duplicated lines, new issues and reviewed security hotspots. In Azure Pipelines, the extension adds three steps around your build:`,
+     lang:"text", code:`Prepare Analysis Configuration   ← before the build (sets up the scanner)
+   build + run tests with coverage
+Run Code Analysis                ← after the build and tests
+Publish Quality Gate Result      ← shows the gate status on the run summary`,
+     after:`<p>The quality gate result is posted to the pull request (PR decoration). Make it blocking with a required status check, or set the scanner property <code>sonar.qualitygate.wait=true</code> so the analysis step itself fails when the gate fails.</p>`}
+  ],
+  tip:`"Azure Repos YAML pipeline doesn't run for PRs" → add a <b>build validation</b> branch policy (the <code>pr:</code> trigger only works for GitHub/Bitbucket repos). "Block merge when the quality gate fails" → make the Sonar status a <b>required status check</b>. "Don't re-validate PRs for docs-only changes" → <b>path filter</b>.`,
+  exercises:[
+    {id:"qg1", type:"mc", title:"The PR trigger that never fires",
+     q:`Your YAML pipeline for a repository in <b>Azure Repos</b> contains a <code>pr:</code> section for <code>main</code>, but pull requests into <code>main</code> never start a build. What should you do?`,
+     options:[
+       "Change the trigger to pr: '*'",
+       "Add a build validation branch policy on main that runs the pipeline",
+       "Enable 'Override the YAML pull request trigger' in the pipeline settings",
+       "Move the pr: section into a template"
+     ], answer:1,
+     hint:`For Azure Repos, PR validation isn't configured in the YAML file.`,
+     why:`Azure Repos Git ignores the YAML <code>pr:</code> trigger. Pull request builds are configured with a <b>build validation</b> branch policy on the target branch. The <code>pr:</code> keyword only applies to GitHub and Bitbucket Cloud repositories.`},
+    {id:"qg2", type:"match", title:"Tune the build validation policy",
+     q:`Match each requirement to the build validation setting that implements it.`,
+     choices:["Build expiration","Path filter","Policy requirement","Trigger"],
+     rows:[
+       ["A PR build result is no longer trusted as soon as main moves on","Build expiration"],
+       ["Only validate when files under /src/api change","Path filter"],
+       ["The PR must not complete if the build fails","Policy requirement"],
+       ["The expensive build should only run when someone queues it from the PR","Trigger"]
+     ],
+     hint:`Required vs. Optional is the policy requirement. Automatic vs. Manual is the trigger.`,
+     why:`<b>Build expiration</b> ("immediately when main is updated") forces a re-run against the latest target. <b>Path filters</b> limit which changes trigger the policy. <b>Required</b> makes a failing build block completion. A <b>Manual</b> trigger waits for someone to queue the build.`},
+    {id:"qg3", type:"order", title:"SonarQube in the pipeline",
+     q:`Put the steps of a .NET pipeline that enforces a SonarQube quality gate in the right order.`,
+     items:[
+       "Prepare Analysis Configuration",
+       "Build the solution",
+       "Run the unit tests and collect code coverage",
+       "Run Code Analysis",
+       "Publish Quality Gate Result"
+     ],
+     hint:`The scanner must be configured before the build, and it analyses after the build and tests.`,
+     why:`<b>Prepare</b> configures the scanner before the build (for .NET it hooks into MSBuild). Build and test so coverage reports exist. <b>Run Code Analysis</b> sends the results to the server. <b>Publish Quality Gate Result</b> waits for the gate and shows its status on the run.`},
+    {id:"qg4", type:"mc", title:"Make the quality gate block the merge",
+     q:`SonarQube Cloud analyses every pull request in your Azure Repos repository and decorates the PR with the quality gate result. Developers still merge PRs whose gate has failed. What's the best fix?`,
+     options:[
+       "Add a Status check branch policy on main that requires the SonarQube quality gate status",
+       "Add more reviewers to the branch policy",
+       "Run the SonarQube analysis in a nightly pipeline instead",
+       "Lower the coverage condition of the quality gate"
+     ], answer:0,
+     hint:`The status is already posted; nothing requires it.`,
+     why:`A posted status is advisory until a branch policy requires it. A <b>Status check</b> policy (or making the analysis step fail with <code>sonar.qualitygate.wait=true</code> inside a required build validation) blocks completion when the gate fails. More reviewers or a nightly run don't enforce anything on the PR.`},
+    {id:"qg5", type:"text", lang:"yaml", title:"Write a PR trigger for a GitHub repo",
+     q:`Your Azure Pipelines YAML builds a <b>GitHub</b> repository. Write the <code>pr:</code> trigger so that:
+      <ul class="tips">
+        <li>pull requests targeting <code>main</code> and any <code>release/*</code> branch are validated</li>
+        <li>PRs that only change files under <code>docs/</code> don't trigger a build</li>
+      </ul>`,
+     starter:`# azure-pipelines.yml (GitHub repository)
+`,
+     checks:[
+       {l:"pr.branches.include contains main", t:a => a.h("pr.branches.include[]","main")},
+       {l:"pr.branches.include contains release/*", t:a => a.h("pr.branches.include[]",/^(refs\/heads\/)?release\/\*$/)},
+       {l:"pr.paths.exclude contains docs/* (or docs/**)", t:a => a.h("pr.paths.exclude[]",/^\/?docs(\/\*{1,2})?\/?$/)},
+       {l:"No docs path in the include list", t:a => !a.h("pr.paths.include[]",/docs/)}
+     ],
+     hint:`<code>pr:</code> takes <code>branches:</code> and <code>paths:</code>, each with <code>include:</code> / <code>exclude:</code> lists.`,
+     solution:`pr:
+  branches:
+    include:
+      - main
+      - release/*
+  paths:
+    exclude:
+      - docs/*`,
+     why:`For GitHub repositories, the <code>pr:</code> trigger decides which pull requests run the pipeline. Branch filters match the <b>target</b> branch of the PR. A path exclude skips PRs whose changes are all in <code>docs/</code>. In Azure Repos you'd set the same with a build validation policy and its path filter.`}
+  ]
+},
+/* ================================================================ 3 */
+{
+  group:"Quality & release gates",
+  title:"Release gates & environment checks",
+  tag:"pre/post-deployment gates · approvals · checks · Azure Policy",
+  intro:`Release gates decide whether a deployment may <b>start</b> or count as <b>successful</b>. Classic release pipelines use <b>pre- and post-deployment conditions</b> (approvals and gates). YAML pipelines use <b>approvals and checks</b> on protected resources such as environments.`,
+  sections:[
+    {h:"Classic releases: deployment conditions", lang:"text", code:`[ Pre-deployment conditions ] → Stage: Staging → [ Post-deployment conditions ]
+   triggers                                       approvals
+   approvals                                      gates
+   gates
+   deployment queue settings`,
+     after:`<p>Gates collect health signals from outside systems. The built-in gates are:</p>
+<div class="tablewrap"><table class="ref">
+<tr><th>Gate</th><th>Passes when</th></tr>
+<tr><td><b>Invoke Azure Function</b></td><td>The function completes successfully (and its response meets your criteria)</td></tr>
+<tr><td><b>Invoke REST API</b></td><td>The REST call returns a successful response</td></tr>
+<tr><td><b>Query Azure Monitor alerts</b></td><td>No configured alert rules are active</td></tr>
+<tr><td><b>Query work items</b></td><td>The number of work items returned by a query is within a threshold (e.g. 0 open P0 bugs)</td></tr>
+<tr><td><b>Check Azure Policy compliance</b></td><td>Resources in the subscription / resource group are compliant with Azure Policy</td></tr>
+</table></div>
+<p><b>Evaluation:</b> after an optional <b>delay before evaluation</b>, all gates are re-evaluated every <b>sampling interval</b> until they all succeed <b>in the same interval</b>. If that doesn't happen before the <b>timeout</b>, the deployment is rejected. When a stage has both: by default <b>pre</b>-deployment asks for approvals <i>first</i>, then evaluates gates; <b>post</b>-deployment evaluates gates first and asks for approvals only after they pass.</p>`},
+    {h:"YAML pipelines: approvals and checks", p:`Checks are <b>not written in YAML</b>. A resource owner adds them in the web UI (<b>Approvals and checks</b>) on environments, service connections, agent pools, repositories, variable groups and secure files. Every stage that uses the resource waits until all checks pass.`,
+     lang:"text", code:`Evaluation order
+1 Static checks       Branch control · Required template · Evaluate artifact
+2 Pre-check approvals
+3 Dynamic checks      Approval · Invoke Azure Function · Invoke REST API ·
+                      Business hours · Query Azure Monitor alerts
+4 Post-check approvals
+5 Exclusive lock`},
+    {h:"Security and governance as gates", after:`<ul class="tips">
+<li><b>Check Azure Policy compliance</b> gate (classic): block promotion when resources are non-compliant.</li>
+<li><b>Required template</b> check: a pipeline may only use the production service connection if it <code>extends</code> an approved template (which can force security-scan steps).</li>
+<li><b>Branch control</b>: only runs from allowed (and protected) branches such as <code>refs/heads/main</code> may deploy.</li>
+<li><b>Evaluate artifact</b>: evaluate container images against a custom policy before deployment.</li>
+<li><b>Invoke REST API</b> / <b>Query work items</b>: wait for an external scanner's verdict, or block while open security bugs exist.</li>
+</ul>`}
+  ],
+  tip:`"Wait 30 minutes after deploying and only continue if no alerts fire" → <b>post-deployment gate: Query Azure Monitor alerts</b> (classic) or the <b>Query Azure Monitor alerts check</b> (YAML). "Approval for production in a YAML pipeline" → <b>Approvals check on the environment</b>, set in the UI, not in YAML. "Every deployment must use the hardened template" → <b>Required template</b> check.`,
+  exercises:[
+    {id:"rg1", type:"match", title:"Pick the gate or check",
+     q:`Match each requirement to the gate or check that implements it.`,
+     choices:["Query Azure Monitor alerts","Query work items","Check Azure Policy compliance","Invoke REST API","Evaluate artifact","Branch control"],
+     rows:[
+       ["Promote only if no alert rules fire during the 30 minutes after deployment","Query Azure Monitor alerts"],
+       ["Don't deploy while any open bug with Priority = 0 exists","Query work items"],
+       ["Stop the release if the resource group's resources violate assigned Azure policies","Check Azure Policy compliance"],
+       ["Wait until the company's change-management API reports the change as approved","Invoke REST API"],
+       ["Only allow container images that pass a custom policy (e.g. from a trusted registry)","Evaluate artifact"],
+       ["Only runs from refs/heads/main may deploy to production","Branch control"]
+     ],
+     hint:`Each requirement names its signal source: alerts, work items, policy, an external API, an image, a branch.`,
+     why:`Each built-in gate or check reads one signal. Azure Monitor alerts show runtime health. Work item queries show open bugs. Azure Policy shows compliance. A REST API brings in any external system. Evaluate artifact checks container images. Branch control checks where the run came from.`},
+    {id:"rg2", type:"lines", title:"Where did the approval go?",
+     q:`A colleague tried to add a production approval to a YAML pipeline. Click the <b>two</b> lines that are not valid and won't create an approval.`,
+     code:[
+       "stages:",
+       "- stage: Production",
+       "  jobs:",
+       "  - deployment: DeployWeb",
+       "    environment: production",
+       "    approvals:",
+       "      approvers: [release-managers]",
+       "    strategy:",
+       "      runOnce:",
+       "        deploy:",
+       "          steps:",
+       "          - script: ./deploy.sh"
+     ], answer:[5,6],
+     hint:`Who adds approvals in YAML pipelines, and where?`,
+     why:`YAML has no <code>approvals:</code> keyword. Approvals and other checks are configured by the resource owner on the <b>production</b> environment (Pipelines → Environments → Approvals and checks). Because the deployment job references <code>environment: production</code>, the stage waits for those checks. Pipeline authors can't remove the checks by editing the YAML.`},
+    {id:"rg3", type:"multi", title:"How classic gates are evaluated",
+     q:`Which statements about gates in classic release pipelines are true? <i>Select all that apply.</i>`,
+     options:[
+       "Gates are re-evaluated at each sampling interval until all of them succeed in the same interval",
+       "If the gates don't all succeed before the timeout, the deployment is rejected",
+       "A delay before evaluation lets the system stabilize before the first evaluation",
+       "By default, pre-deployment conditions ask for approvals first and then evaluate gates",
+       "Gates are written in the azure-pipelines.yml file under a gates: keyword",
+       "A gate is evaluated exactly once; a single failure rejects the deployment"
+     ], answer:[0,1,2,3],
+     hint:`Health signals change over time, so gates are sampled repeatedly.`,
+     why:`Gates are sampled repeatedly because health signals change. All gates must pass in the <b>same</b> sampling interval before the timeout. For pre-deployment, approvals come first by default (no wasted gate evaluations if someone rejects). For post-deployment, gates come first so approvers have the data. Gates are a classic-release feature configured in the UI. YAML uses checks instead.`},
+    {id:"rg4", type:"order", title:"Order of checks",
+     q:`A production environment has several checks. In which order does Azure Pipelines evaluate the categories?`,
+     items:[
+       "Static checks: Branch control, Required template, Evaluate artifact",
+       "Pre-check approvals",
+       "Dynamic checks: Approval, Invoke Azure Function / REST API, Business hours, Query Azure Monitor alerts",
+       "Post-check approvals",
+       "Exclusive lock"
+     ],
+     hint:`Cheap static checks run first; the lock is acquired last.`,
+     why:`Static checks can fail fast without bothering anyone, so they run first. Then come pre-check approvals, the dynamic checks, and post-check approvals. The exclusive lock is taken last, right before the stage runs, so the resource isn't locked while you wait for people.`},
+    {id:"rg5", type:"mc", title:"Governance for every pipeline",
+     q:`Security requires that <b>every</b> YAML pipeline that deploys with the <code>prod-arm</code> service connection runs the company's credential scan and policy checks. Teams write their own pipelines. What should you configure?`,
+     options:[
+       "A Required template check on the prod-arm service connection, pointing to a template that contains the scan steps",
+       "A branch policy on main that requires one reviewer",
+       "A pipeline variable named RUN_SECURITY_SCAN set to true",
+       "An approval check on every team's dev environment"
+     ], answer:0,
+     hint:`The control has to sit on the shared resource, not inside each team's YAML.`,
+     why:`A <b>Required template</b> check on the service connection makes any stage that uses it fail unless the pipeline <code>extends</code> the approved template. That template can contain the mandatory security and governance steps. Variables and reviewers don't stop a pipeline from skipping the scan.`}
+  ]
+},
+
+/* ================================================================ 4 */
+{
+  group:"Run tests in the pipeline",
+  title:"Test tasks in Azure Pipelines",
+  tag:"DotNetCoreCLI · VSTest · Maven · Gradle · npm",
+  intro:`Azure Pipelines can run tests with any command line, but the built-in tasks also <b>publish the results</b> for you. Know which task fits which stack, and which inputs turn on test publishing and code coverage.`,
+  sections:[
+    {h:".NET: DotNetCoreCLI@2", code:`- task: DotNetCoreCLI@2
+  displayName: Run unit tests
+  inputs:
+    command: test
+    projects: '**/*Tests.csproj'
+    arguments: '--configuration Release --collect "XPlat Code Coverage"'
+    # publishTestResults: true   ← default: TRX results go to the Tests tab`,
+     p:`<code>dotnet test</code> through this task publishes results automatically. <code>--collect "XPlat Code Coverage"</code> uses the coverlet collector and writes a Cobertura file. <code>--collect "Code Coverage"</code> uses Microsoft's collector.`},
+    {h:"Visual Studio Test: VSTest@3", code:`- task: VisualStudioTestPlatformInstaller@1   # only if the agent has no Visual Studio
+- task: VSTest@3
+  inputs:
+    testSelector: testAssemblies              # or testPlan / testRun
+    testAssemblyVer2: |
+      **/*Tests.dll
+      !**/obj/**
+    searchFolder: '$(System.DefaultWorkingDirectory)'
+    vsTestVersion: toolsInstaller             # use the installer's test platform
+    codeCoverageEnabled: true                 # produces .coverage files
+    runInParallel: true                       # use all cores of this one machine
+    testRunTitle: 'Unit tests'`,
+     p:`VSTest runs any framework with a VSTest adapter (MSTest, xUnit, NUnit). It needs the <code>vstest</code> capability: Visual Studio on the agent, or the <b>Visual Studio Test Platform Installer</b> task. It also handles multi-agent distribution, rerunning failed tests, Test Impact Analysis and running tests from a test plan.`},
+    {h:"Java and JavaScript", code:`- task: Maven@4
+  inputs:
+    mavenPOMFile: 'pom.xml'
+    goals: 'package'                  # runs the test phase too
+    publishJUnitResults: true         # default true
+    testResultsFiles: '**/surefire-reports/TEST-*.xml'
+    codeCoverageToolOption: 'JaCoCo'  # None | Cobertura | JaCoCo
+
+- task: Gradle@3
+  inputs:
+    gradleWrapperFile: 'gradlew'
+    tasks: 'build'
+    publishJUnitResults: true
+    testResultsFiles: '**/TEST-*.xml'
+
+- script: npm ci && npm test          # e.g. Jest with the jest-junit reporter
+- task: PublishTestResults@2          # npm has no built-in publishing
+  condition: succeededOrFailed()
+  inputs:
+    testResultsFormat: JUnit
+    testResultsFiles: '**/junit*.xml'`}
+  ],
+  tip:`"Run tests on an agent without Visual Studio" → <b>Visual Studio Test Platform Installer</b> + <code>vsTestVersion: toolsInstaller</code>. "Java build, show results and JaCoCo coverage" → <b>Maven@4</b> with <code>publishJUnitResults</code> and <code>codeCoverageToolOption: JaCoCo</code>. Any runner that writes JUnit/NUnit/xUnit/TRX/CTest → <b>PublishTestResults@2</b>.`,
+  exercises:[
+    {id:"rt1", type:"text", lang:"yaml", title:"Run .NET tests with coverage",
+     q:`Write a step (or a <code>steps:</code> list) that uses <b>DotNetCoreCLI@2</b> to:
+      <ul class="tips">
+        <li>run <code>test</code> for all projects matching <code>**/*Tests.csproj</code></li>
+        <li>build in the <code>Release</code> configuration</li>
+        <li>collect coverage with the cross-platform coverlet collector (<code>XPlat Code Coverage</code>)</li>
+        <li>keep publishing the test results to the Tests tab</li>
+      </ul>`,
+     starter:`steps:
+`,
+     checks:[
+       {l:"A DotNetCoreCLI@2 step", t:a => a.item(STEP,{task:/^DotNetCoreCLI@2$/i})},
+       {l:"command: test", t:a => a.item(STEP,{task:/^DotNetCoreCLI@2$/i,"inputs.command":"test"})},
+       {l:"projects targets **/*Tests.csproj", t:a => a.item(STEP,{task:/^DotNetCoreCLI@2$/i,"inputs.projects":/\*Tests?\.csproj/i})},
+       {l:"arguments set the Release configuration", t:a => a.item(STEP,{task:/^DotNetCoreCLI@2$/i,"inputs.arguments":/(--configuration|-c)[ =:]+Release\b/i})},
+       {l:"arguments collect \"XPlat Code Coverage\"", t:a => a.item(STEP,{task:/^DotNetCoreCLI@2$/i,"inputs.arguments":/--collect[ =:]+["']?XPlat Code Coverage/i})},
+       {l:"publishTestResults is not switched off", t:a => !a.item(STEP,{task:/^DotNetCoreCLI@2$/i,"inputs.publishTestResults":"false"})}
+     ],
+     hint:`The inputs are <code>command</code>, <code>projects</code> and <code>arguments</code>. The collector name contains spaces, so put it in double quotes inside the arguments.`,
+     solution:`steps:
+- task: DotNetCoreCLI@2
+  displayName: Test
+  inputs:
+    command: test
+    projects: '**/*Tests.csproj'
+    arguments: '--configuration Release --collect "XPlat Code Coverage"'
+    publishTestResults: true`,
+     why:`<code>DotNetCoreCLI@2</code> with <code>command: test</code> runs <code>dotnet test</code> and, because <code>publishTestResults</code> defaults to <code>true</code>, publishes TRX results to the Tests tab. The coverlet collector writes <code>coverage.cobertura.xml</code> under the results directory. A later task can publish it to the Code Coverage tab.`},
+    {id:"rt2", type:"match", title:"Which task is this?",
+     q:`Match each description to the task.`,
+     choices:["DotNetCoreCLI@2","VSTest@3","Maven@4","Gradle@3","PublishTestResults@2","VisualStudioTestPlatformInstaller@1"],
+     rows:[
+       ["Runs mvn goals and publishes **/surefire-reports/TEST-*.xml by default","Maven@4"],
+       ["Runs tests through test adapters and can distribute them across several agents","VSTest@3"],
+       ["Runs dotnet test and publishes the TRX results automatically","DotNetCoreCLI@2"],
+       ["Runs the project's gradlew wrapper with the tasks you list","Gradle@3"],
+       ["Uploads JUnit, NUnit, xUnit, TRX or CTest result files produced by any runner","PublishTestResults@2"],
+       ["Acquires the test platform from NuGet so VSTest works without Visual Studio","VisualStudioTestPlatformInstaller@1"]
+     ],
+     hint:`One of them doesn't run tests at all; it only publishes result files.`,
+     why:`Maven, Gradle, DotNetCoreCLI and VSTest run tests and can publish the results themselves. PublishTestResults only uploads result files that another runner (pytest, Jest, Go, CTest…) produced. The Test Platform Installer satisfies VSTest's <code>vstest</code> demand on agents without Visual Studio.`},
+    {id:"rt3", type:"fill", title:"Configure VSTest", mono:true,
+     q:`The self-hosted Windows agent has no Visual Studio. Complete the YAML so VSTest runs the test assemblies with the installed test platform and collects code coverage.`,
+     tpl:`- task: VisualStudioTestPlatformInstaller@1
+- task: VSTest@3
+  inputs:
+    testSelector: [[0]]
+    testAssemblyVer2: |
+      **/*Tests.dll
+      !**/obj/**
+    vsTestVersion: [[1]]
+    [[2]]: true`,
+     blanks:[["testAssemblies"],["toolsInstaller"],["codeCoverageEnabled"]],
+     hint:`The three test selectors are testAssemblies, testPlan and testRun. Coverage is a boolean whose name ends in "Enabled".`,
+     why:`<code>testSelector: testAssemblies</code> runs tests from DLLs found by the patterns. <code>vsTestVersion: toolsInstaller</code> uses the test platform that the installer task downloaded. <code>codeCoverageEnabled: true</code> collects Microsoft code coverage (<code>.coverage</code>), which shows up in the Code Coverage tab.`},
+    {id:"rt4", type:"mc", title:"Demand not satisfied",
+     q:`A pipeline using <code>VSTest@3</code> can't find an agent in your self-hosted pool: <i>"No agent found in pool which satisfies the specified demands: vstest"</i>. The build servers have the .NET SDK but no Visual Studio. What's the least effort fix?`,
+     options:[
+       "Install Visual Studio Enterprise on every agent",
+       "Add the Visual Studio Test Platform Installer task before VSTest and set vsTestVersion: toolsInstaller",
+       "Replace VSTest@3 with PublishTestResults@2",
+       "Add the capability vstest manually to the agents without installing anything"
+     ], answer:1,
+     hint:`There's a task that downloads the test platform from NuGet.`,
+     why:`The <b>Visual Studio Test Platform Installer</b> task gets <code>vstest.console</code> from NuGet and satisfies the <code>vstest</code> demand. VSTest then uses it with <code>vsTestVersion: toolsInstaller</code>. Faking the capability only moves the failure to run time, and PublishTestResults doesn't run tests.`},
+    {id:"rt5", type:"lines", title:"Why is the Tests tab empty?",
+     q:`This Java pipeline should run the unit tests and show their results in the Tests tab, but the tab stays empty. Click the <b>two</b> lines responsible.`,
+     code:[
+       "- task: Maven@4",
+       "  inputs:",
+       "    mavenPOMFile: 'pom.xml'",
+       "    goals: 'compile'",
+       "    publishJUnitResults: false",
+       "    testResultsFiles: '**/surefire-reports/TEST-*.xml'",
+       "    javaHomeOption: 'JDKVersion'",
+       "    jdkVersionOption: '1.17'"
+     ], answer:[3,4],
+     hint:`One line means no tests run; the other means results wouldn't be uploaded anyway.`,
+     why:`The <code>compile</code> goal stops before Maven's <code>test</code> phase, so no tests run and Surefire writes no reports. Use <code>package</code> (or <code>test</code>/<code>verify</code>). Also, <code>publishJUnitResults: false</code> turns off publishing. Its default is <code>true</code>, and it uploads the Surefire XML to the Tests tab.`}
+  ]
+},
+/* ================================================================ 5 */
+{
+  group:"Run tests in the pipeline",
+  title:"Publishing test results",
+  tag:"PublishTestResults · formats · conditions · Tests tab",
+  intro:`Test results become useful when they're <b>published</b>: the Tests tab, test analytics, flaky test detection and traceability all read the published runs. Tasks such as DotNetCoreCLI, VSTest, Maven and Gradle publish for you. For other runners, use <b>PublishTestResults@2</b>.`,
+  sections:[
+    {h:"PublishTestResults@2", code:`- task: PublishTestResults@2
+  condition: succeededOrFailed()     # publish even when the test step failed
+  inputs:
+    testResultsFormat: JUnit         # JUnit | NUnit | VSTest | XUnit | CTest  (alias: testRunner)
+    testResultsFiles: '**/TEST-*.xml'   # default; minimatch, several lines allowed
+    searchFolder: '$(System.DefaultWorkingDirectory)'
+    mergeTestResults: true           # one test run instead of one per file
+    failTaskOnFailedTests: true      # default false: only publishes
+    testRunTitle: 'API tests ($(Agent.OS))'`,
+     after:`<div class="tablewrap"><table class="ref">
+<tr><th>Format value</th><th>Typical producers</th></tr>
+<tr><td><code>JUnit</code></td><td>Maven Surefire, Gradle, pytest <code>--junitxml</code>, Jest with jest-junit, Mocha reporters, PHPUnit</td></tr>
+<tr><td><code>VSTest</code></td><td>TRX files, e.g. <code>dotnet test --logger trx</code> (use a <code>**/*.trx</code> pattern)</td></tr>
+<tr><td><code>NUnit</code></td><td>NUnit 2 and NUnit 3 result XML</td></tr>
+<tr><td><code>XUnit</code></td><td>xUnit.net v2 XML</td></tr>
+<tr><td><code>CTest</code></td><td>CMake's CTest</td></tr>
+</table></div>`},
+    {h:"Don't lose the results of a failing run", p:`Steps run only when the previous steps succeeded (<code>succeeded()</code> is the default condition). If the test step fails, a plain publish step is <b>skipped</b>, so the results you need most never appear. Give the publish step <code>condition: succeededOrFailed()</code> (or <code>always()</code>). In GitHub Actions the equivalent is <code>if: always()</code> or <code>if: ${'${{'} !cancelled() }}</code>.`},
+    {h:"The Tests tab", after:`<ul class="tips">
+<li>Summary: total, passed, failed, other, pass percentage, run duration, and comparison with the previous run (new failures vs. existing ones).</li>
+<li>Filter by outcome, test file, owner, run; open a result to see the error message, stack trace, console logs and attachments.</li>
+<li><b>History</b> of a test across runs and branches, and a <b>Bug</b> action to file a bug with the failure details already filled in.</li>
+<li>Results from release stages appear on the release's Tests tab in the same way.</li>
+</ul>`}
+  ],
+  tip:`"Results are missing when tests fail" → <code>condition: succeededOrFailed()</code> on the publish step. "Publish TRX files" → <code>testResultsFormat: VSTest</code> with a <code>*.trx</code> pattern. "Fail the pipeline on any failed test when publishing" → <code>failTaskOnFailedTests: true</code> (default <code>false</code>).`,
+  exercises:[
+    {id:"pt1", type:"text", lang:"yaml", title:"Run Jest and publish the results",
+     q:`Write the <code>steps:</code> for a Node.js project:
+      <ul class="tips">
+        <li>a script step that runs <code>npm ci</code> and <code>npm test</code> (Jest writes JUnit XML to <code>test-results/junit.xml</code>)</li>
+        <li>a <b>PublishTestResults@2</b> step for the <b>JUnit</b> file(s) that runs <b>even if the tests fail</b></li>
+        <li>the publish step should fail the job if any test failed, and title the run <code>Unit tests</code></li>
+      </ul>`,
+     starter:`steps:
+`,
+     checks:[
+       {l:"A script step runs npm ci", t:a => a.h(STEP + "[].script",/npm\s+ci\b/) || a.h(STEP + "[].bash",/npm\s+ci\b/)},
+       {l:"…and npm test (or npm run test)", t:a => a.h(STEP + "[].script",/npm\s+(run\s+)?test\b/) || a.h(STEP + "[].bash",/npm\s+(run\s+)?test\b/)},
+       {l:"PublishTestResults@2 with JUnit format", t:a => a.item(STEP,{task:/^PublishTestResults@2$/i,"inputs.testResultsFormat":"JUnit"}) || a.item(STEP,{task:/^PublishTestResults@2$/i,"inputs.testRunner":"JUnit"})},
+       {l:"testResultsFiles matches the junit XML", t:a => a.item(STEP,{task:/^PublishTestResults@2$/i,"inputs.testResultsFiles":/(junit|test-results)[^\n]*\.xml|\*\*\/\*\.xml/i})},
+       {l:"Publish runs even when tests fail (succeededOrFailed() or always())", t:a => a.item(STEP,{task:/^PublishTestResults@2$/i,condition:COND_ALWAYS})},
+       {l:"failTaskOnFailedTests: true", t:a => a.item(STEP,{task:/^PublishTestResults@2$/i,"inputs.failTaskOnFailedTests":"true"})},
+       {l:"testRunTitle: Unit tests", t:a => a.item(STEP,{task:/^PublishTestResults@2$/i,"inputs.testRunTitle":/^unit tests$/i})}
+     ],
+     hint:`<code>condition:</code> sits at the same level as <code>task:</code> and <code>inputs:</code>, not inside <code>inputs</code>.`,
+     solution:`steps:
+- script: |
+    npm ci
+    npm test
+  displayName: Install and test
+- task: PublishTestResults@2
+  condition: succeededOrFailed()
+  inputs:
+    testResultsFormat: JUnit
+    testResultsFiles: '**/test-results/junit*.xml'
+    failTaskOnFailedTests: true
+    testRunTitle: Unit tests`,
+     why:`<code>npm test</code> exits non-zero when tests fail, which fails its step. Without a condition, the publish step would then be skipped. <code>succeededOrFailed()</code> runs it unless the run was cancelled. <code>failTaskOnFailedTests: true</code> makes the job fail on failed tests even if the runner itself didn't fail the step.`},
+    {id:"pt2", type:"match", title:"Pick the result format",
+     q:`Which <code>testResultsFormat</code> value do you use for each result file?`,
+     choices:["JUnit","VSTest","NUnit","XUnit","CTest"],
+     rows:[
+       ["pytest --junitxml=reports/results.xml","JUnit"],
+       ["dotnet test --logger trx","VSTest"],
+       ["NUnit 3 console runner result XML","NUnit"],
+       ["xUnit.net v2 XML report","XUnit"],
+       ["CMake test driver output","CTest"],
+       ["Maven Surefire TEST-*.xml reports","JUnit"]
+     ],
+     hint:`TRX is the Visual Studio format. JUnit XML is the common format that many runners can write.`,
+     why:`JUnit XML is the common format, written by Surefire, Gradle, pytest, Jest reporters and many others. TRX files use the <code>VSTest</code> value (the name is historical; any TRX file works). NUnit, xUnit and CTest have their own values.`},
+    {id:"pt3", type:"mc", title:"Results vanish when tests fail",
+     q:`When all tests pass, the run shows a Tests tab. When some tests fail, the Tests tab is missing, so developers have to dig through the logs. The YAML has a script step running pytest followed by <code>PublishTestResults@2</code>. What's the fix?`,
+     options:[
+       "Set failTaskOnFailedTests: true on the publish task",
+       "Add condition: succeededOrFailed() to the PublishTestResults@2 step",
+       "Add continueOnError: true to the PublishTestResults@2 step",
+       "Change testResultsFormat to VSTest"
+     ], answer:1,
+     hint:`Look at the step's default condition after a failed previous step.`,
+     why:`The pytest step fails, so the next step, with the default <code>succeeded()</code> condition, is skipped. <code>succeededOrFailed()</code> (or <code>always()</code>) makes the publish step run anyway. <code>continueOnError</code> only affects how the step's <i>own</i> failure is treated.`},
+    {id:"pt4", type:"multi", title:"PublishTestResults facts",
+     q:`Which statements about <code>PublishTestResults@2</code> are true? <i>Select all that apply.</i>`,
+     options:[
+       "The default format is JUnit and the default file pattern is **/TEST-*.xml",
+       "failTaskOnFailedTests defaults to false, so failed tests alone don't fail the task",
+       "To publish TRX files, use testResultsFormat: VSTest with a *.trx pattern",
+       "You don't need it after DotNetCoreCLI@2 test or VSTest@3, which publish their own results",
+       "It calculates code coverage from the JUnit files",
+       "mergeTestResults: true reports all files against a single test run"
+     ], answer:[0,1,2,3,5],
+     hint:`Test results and coverage are separate things with separate tasks.`,
+     why:`All are true except the coverage claim. Coverage is published with <b>PublishCodeCoverageResults@2</b> (or by tasks that have coverage options). JUnit files only contain test outcomes. If you add PublishTestResults after DotNetCoreCLI test anyway, the same results are published twice.`},
+    {id:"pt5", type:"fill", title:"Publish TRX files", mono:true,
+     q:`Tests ran inside a Docker build and the TRX files were copied to the agent. Complete the step so all <code>.trx</code> files are published as <b>one</b> test run, even if an earlier step failed.`,
+     tpl:`- task: PublishTestResults@2
+  condition: [[0]]
+  inputs:
+    testResultsFormat: [[1]]
+    testResultsFiles: '**/*.[[2]]'
+    [[3]]: true`,
+     blanks:[["succeededOrFailed()","always()"],["VSTest"],["trx"],["mergeTestResults"]],
+     hint:`TRX is the Visual Studio Test format. Combining files into one run is a "merge".`,
+     why:`<code>VSTest</code> is the format value for TRX files. <code>mergeTestResults: true</code> creates one test run instead of one per file. <code>succeededOrFailed()</code> keeps publishing even when the test container step failed.`}
+  ]
+},
+/* ================================================================ 6 */
+{
+  group:"Run tests in the pipeline",
+  title:"Test agents & parallel testing",
+  tag:"parallel jobs · slicing · matrix · UI test agents",
+  intro:`Long test suites slow down every pull request. You can spread tests across <b>several agents</b> (parallel jobs), run the same tests on <b>several platforms</b> (matrix), and use all <b>cores</b> on one machine. UI tests also have special requirements for the agent.`,
+  sections:[
+    {h:"Multi-agent: strategy: parallel", code:`jobs:
+- job: Tests
+  strategy:
+    parallel: 4                     # 4 copies of this job, each on its own agent
+  pool:
+    vmImage: windows-latest
+  steps:
+  - task: VSTest@3
+    inputs:
+      testAssemblyVer2: '**/*Tests.dll'
+      distributionBatchType: basedOnExecutionTime   # or basedOnTestCases / basedOnAssembly`,
+     p:`<b>VSTest@3</b> sees that it runs in a parallel job and <b>slices the tests automatically</b>. With other runners you slice yourself, using the predefined variables <code>System.TotalJobsInPhase</code> (number of slices) and <code>System.JobPositionInPhase</code> (this job's slice). Each parallel copy uses one of your organization's <b>parallel jobs</b>.`},
+    {h:"Slicing for any runner", lang:"sh", code:`# Bash step in a job with strategy: parallel: 3
+total=$(System.TotalJobsInPhase)       # 3
+position=$(System.JobPositionInPhase)  # this job's slice number
+# run every file whose index modulo $total matches this job
+files=$(ls tests/*.test.js | awk -v t=$total -v p=$position 'NR % t == p % t')
+npx mocha $files --reporter mocha-junit-reporter`},
+    {h:"Multi-configuration: matrix", code:`strategy:
+  matrix:
+    linux:   { imageName: 'ubuntu-latest' }
+    windows: { imageName: 'windows-latest' }
+    mac:     { imageName: 'macos-latest' }
+  maxParallel: 2
+pool:
+  vmImage: $(imageName)`,
+     p:`A matrix runs the <b>same</b> tests once per configuration (OS, runtime version, browser). <code>parallel</code> runs <b>different slices</b> of the tests. VSTest's <code>runInParallel: true</code> is different again: it uses the cores of one machine.`},
+    {h:"Agents for UI tests", after:`<ul class="tips">
+<li><b>Desktop UI tests</b> (WinAppDriver, Coded UI) need an agent running <b>interactively with autologon</b>, not as a Windows service, so there's a desktop session.</li>
+<li><b>Browser tests</b> can run on service-mode or Microsoft-hosted agents if the browser runs <b>headless</b>.</li>
+<li>VSTest's <code>uiTests: true</code> ("Test mix contains UI tests") is only a reminder. It does <b>not</b> reconfigure the agent.</li>
+<li>Self-hosted agents that have the required browsers or tools can advertise a <b>capability</b>; jobs select them with <code>demands:</code>.</li>
+</ul>`}
+  ],
+  tip:`"Cut a 2-hour suite using several agents" → <code>strategy: parallel: N</code> (VSTest slices automatically; batch <b>based on past running time</b> for balanced slices). "Test on Windows, Linux and macOS" → <b>matrix</b>. "Desktop UI tests fail on a service agent" → run the agent <b>interactively with autologon</b>.`,
+  exercises:[
+    {id:"pa1", type:"text", lang:"yaml", title:"Spread VSTest across agents",
+     q:`Write a job named <code>UITests</code> that:
+      <ul class="tips">
+        <li>runs on <b>3</b> agents in parallel, using the <code>windows-latest</code> image</li>
+        <li>runs <b>VSTest@3</b> on <code>**/*UITests.dll</code></li>
+        <li>batches tests by their <b>past running time</b> so every agent finishes at about the same time</li>
+      </ul>`,
+     starter:`jobs:
+`,
+     checks:[
+       {l:"A job named UITests", t:a => a.item("jobs",{job:"UITests"})},
+       {l:"strategy.parallel: 3", t:a => a.item("jobs",{job:"UITests","strategy.parallel":"3"})},
+       {l:"pool.vmImage: windows-latest", t:a => a.item("jobs",{job:"UITests","pool.vmImage":"windows-latest"})},
+       {l:"A VSTest@3 step", t:a => a.item(STEP,{task:/^VSTest@3$/i})},
+       {l:"testAssemblyVer2 matches *UITests.dll", t:a => a.item(STEP,{task:/^VSTest@3$/i,"inputs.testAssemblyVer2":/\*UITests\.dll/i})},
+       {l:"distributionBatchType: basedOnExecutionTime", t:a => a.item(STEP,{task:/^VSTest@3$/i,"inputs.distributionBatchType":"basedOnExecutionTime"})}
+     ],
+     hint:`<code>strategy:</code> and <code>pool:</code> are siblings of <code>steps:</code> inside the job. The batch input is <code>distributionBatchType</code>.`,
+     solution:`jobs:
+- job: UITests
+  strategy:
+    parallel: 3
+  pool:
+    vmImage: windows-latest
+  steps:
+  - task: VSTest@3
+    inputs:
+      testSelector: testAssemblies
+      testAssemblyVer2: '**/*UITests.dll'
+      distributionBatchType: basedOnExecutionTime`,
+     why:`<code>parallel: 3</code> runs three copies of the job. VSTest notices this and gives each agent a share of the tests. <code>basedOnExecutionTime</code> uses past durations to build batches that take about the same time. The default (<code>basedOnTestCases</code>) only splits by count.`},
+    {id:"pa2", type:"mc", title:"Which kind of parallel?",
+     q:`A VSTest suite takes 90 minutes on one agent. You have 3 free parallel jobs and want each run to use 3 agents. What do you configure?`,
+     options:[
+       "runInParallel: true on the VSTest@3 task",
+       "strategy: parallel: 3 on the job that runs VSTest@3",
+       "A matrix with three identical entries",
+       "maxParallel: 3 on the stage"
+     ], answer:1,
+     hint:`One of these options uses more cores, not more machines.`,
+     why:`<code>strategy: parallel: 3</code> creates three agent jobs, and VSTest distributes the tests among them. <code>runInParallel</code> only uses the cores of a single machine. A matrix of identical entries would run the <b>whole</b> suite three times.`},
+    {id:"pa3", type:"fill", title:"Slice tests yourself", mono:true,
+     q:`A Python job uses <code>strategy: parallel: 4</code>. Complete the predefined variables the slicing script needs.`,
+     tpl:`total=$(System.[[0]])        # how many slices exist
+position=$(System.[[1]])     # which slice this job runs
+python tools/select_tests.py --total $total --index $position > slice.txt
+pytest $(cat slice.txt) --junitxml=results/TEST-slice.xml`,
+     blanks:[["TotalJobsInPhase"],["JobPositionInPhase"]],
+     hint:`Both variable names end in "InPhase".`,
+     why:`For a parallel job, Azure Pipelines sets <code>System.TotalJobsInPhase</code> (the number of slices) and <code>System.JobPositionInPhase</code> (this job's position). Any runner can use them to choose its share of the tests. Then publish each slice's JUnit file with PublishTestResults.`},
+    {id:"pa4", type:"multi", title:"Agents for UI tests",
+     q:`Which statements about running UI tests on agents are correct? <i>Select all that apply.</i>`,
+     options:[
+       "Desktop UI tests need an agent that runs interactively with autologon enabled",
+       "Setting uiTests: true on VSTest switches the agent to interactive mode",
+       "Browser tests can run on Microsoft-hosted agents when the browser runs headless",
+       "A self-hosted agent that runs as a Windows service has no interactive desktop session",
+       "UI tests can only run in a container job"
+     ], answer:[0,2,3],
+     hint:`One input is only a reminder.`,
+     why:`Desktop UI automation needs a real, logged-in desktop session, so you configure the agent as interactive with autologon. A service-mode agent has no such session. Browsers in headless mode don't need one. <code>uiTests: true</code> doesn't change the agent; it only reminds you to configure it.`},
+    {id:"pa5", type:"text", lang:"yaml", title:"Test on three operating systems",
+     q:`Write a job named <code>Test</code> that runs the same tests on <code>ubuntu-latest</code>, <code>windows-latest</code> and <code>macos-latest</code> with a <b>matrix</b>, using a variable <code>imageName</code> for the pool image. At most <b>2</b> configurations may run at the same time. The only step is <code>dotnet test</code> in a script.`,
+     starter:`jobs:
+`,
+     checks:[
+       {l:"A job named Test", t:a => a.item("jobs",{job:"Test"})},
+       {l:"Matrix entry with imageName ubuntu-latest", t:a => a.h("jobs[].strategy.matrix.*.imageName","ubuntu-latest")},
+       {l:"Matrix entry with imageName windows-latest", t:a => a.h("jobs[].strategy.matrix.*.imageName","windows-latest")},
+       {l:"Matrix entry with imageName macos-latest", t:a => a.h("jobs[].strategy.matrix.*.imageName",/^macos-latest$/i)},
+       {l:"maxParallel: 2", t:a => a.h("jobs[].strategy.maxParallel","2")},
+       {l:"pool.vmImage uses $(imageName)", t:a => a.h("jobs[].pool.vmImage",/^\$\(\s*imageName\s*\)$/)},
+       {l:"A script step runs dotnet test", t:a => a.h(STEP + "[].script",/dotnet\s+test/)}
+     ],
+     hint:`Each matrix entry is a named mapping, for example <code>linux:</code> with <code>imageName: 'ubuntu-latest'</code> under it. The variable is read with macro syntax <code>$(imageName)</code>.`,
+     solution:`jobs:
+- job: Test
+  strategy:
+    matrix:
+      linux:
+        imageName: 'ubuntu-latest'
+      windows:
+        imageName: 'windows-latest'
+      mac:
+        imageName: 'macos-latest'
+    maxParallel: 2
+  pool:
+    vmImage: $(imageName)
+  steps:
+  - script: dotnet test`,
+     why:`Each matrix entry creates a copy of the job with its own variables. Here <code>imageName</code> picks the hosted image. <code>maxParallel</code> limits how many copies run at once, so the matrix doesn't use all your parallel jobs. Test results from each copy appear as separate runs, so you can see failures per OS.`}
+  ]
+},
+/* ================================================================ 7 */
+{
+  group:"Measure quality",
+  title:"Code coverage",
+  tag:"Cobertura · JaCoCo · PublishCodeCoverageResults · diff coverage",
+  intro:`Code coverage tells you which lines and branches your tests actually ran. In a pipeline you <b>collect</b> it while testing, <b>publish</b> it to the Code Coverage tab, and can <b>gate pull requests</b> on the coverage of the changed lines.`,
+  sections:[
+    {h:"Collectors and formats", after:`<div class="tablewrap"><table class="ref">
+<tr><th>Stack</th><th>Collector</th><th>Format</th></tr>
+<tr><td>.NET</td><td>coverlet: <code>dotnet test --collect "XPlat Code Coverage"</code></td><td>Cobertura XML (<code>coverage.cobertura.xml</code>)</td></tr>
+<tr><td>.NET</td><td>Microsoft: <code>--collect "Code Coverage"</code> or VSTest <code>codeCoverageEnabled</code></td><td><code>.coverage</code> (binary; Cobertura output is also possible)</td></tr>
+<tr><td>Java</td><td>JaCoCo plugin (or Maven/Gradle task coverage option)</td><td>JaCoCo XML</td></tr>
+<tr><td>JavaScript</td><td>Istanbul / nyc / Jest with the <code>cobertura</code> reporter</td><td>Cobertura XML</td></tr>
+<tr><td>Python</td><td>coverage.py / pytest-cov: <code>coverage xml</code></td><td>Cobertura XML</td></tr>
+</table></div>`},
+    {h:"Publish it: PublishCodeCoverageResults@2", code:`- task: DotNetCoreCLI@2
+  inputs:
+    command: test
+    projects: '**/*Tests.csproj'
+    arguments: '--collect "XPlat Code Coverage"'
+- task: PublishCodeCoverageResults@2
+  inputs:
+    summaryFileLocation: '$(Agent.TempDirectory)/**/coverage.cobertura.xml'
+    # pathToSources: …            # needed when reports have relative paths (JaCoCo)
+    # failIfCoverageEmpty: true   # default false`,
+     p:`Version 2 has only <code>summaryFileLocation</code> (minimatch allowed; several files are merged), <code>pathToSources</code> and <code>failIfCoverageEmpty</code>. It accepts Cobertura, JaCoCo and other XML formats, as well as <code>.coverage</code> files, and creates the Code Coverage tab and an HTML report. The old v1 asked for <code>codeCoverageTool: Cobertura | JaCoCo</code>. Tasks such as VSTest, Maven and Gradle can publish coverage themselves. In a multistage pipeline, coverage results appear only after the whole run completes.`},
+    {h:"Gate pull requests on diff coverage", file:"azurepipelines-coverage.yml (repository root)", code:`coverage:
+  status:
+    comments: on      # default off: post per-file coverage as a PR comment
+    diff:
+      target: 80%     # default 70%: share of CHANGED lines that must be covered`,
+     after:`<ul class="tips">
+<li><b>Diff coverage</b> measures only the lines changed in the pull request. Full coverage measures the whole code base.</li>
+<li>The pipeline posts a code coverage <b>status</b> to the PR. It's <b>advisory</b> until you add a branch policy (status check) that requires it.</li>
+<li>Available for <b>Azure Repos</b> only. The settings file belongs to the repository, so it applies whichever pipeline builds the PR (classic too).</li>
+<li>Diff coverage comments need <b>PublishCodeCoverageResults@2</b>, not v1.</li>
+</ul>`}
+  ],
+  tip:`"Java + JaCoCo" or ".NET + coverlet (Cobertura)" → publish with <b>PublishCodeCoverageResults@2</b> and <code>summaryFileLocation</code>. "PRs must cover 80% of changed lines" → <code>azurepipelines-coverage.yml</code> with <code>diff.target: 80%</code> <b>plus</b> a branch policy that requires the coverage status.`,
+  exercises:[
+    {id:"cc1", type:"text", lang:"yaml", title:"Collect and publish Cobertura coverage",
+     q:`Write <code>steps:</code> that:
+      <ul class="tips">
+        <li>run <code>dotnet test</code> through <b>DotNetCoreCLI@2</b> with the coverlet collector (<code>XPlat Code Coverage</code>)</li>
+        <li>publish the resulting <code>coverage.cobertura.xml</code> file(s) from <code>$(Agent.TempDirectory)</code> with <b>PublishCodeCoverageResults@2</b></li>
+        <li>make the publish task fail if no coverage was found</li>
+      </ul>`,
+     starter:`steps:
+`,
+     checks:[
+       {l:"DotNetCoreCLI@2 runs command: test", t:a => a.item(STEP,{task:/^DotNetCoreCLI@2$/i,"inputs.command":"test"})},
+       {l:"…collecting \"XPlat Code Coverage\"", t:a => a.item(STEP,{task:/^DotNetCoreCLI@2$/i,"inputs.arguments":/--collect[ =:]+["']?XPlat Code Coverage/i})},
+       {l:"PublishCodeCoverageResults@2 (not v1)", t:a => a.item(STEP,{task:/^PublishCodeCoverageResults@2$/i})},
+       {l:"summaryFileLocation points to coverage.cobertura.xml under $(Agent.TempDirectory)", t:a => a.item(STEP,{task:/^PublishCodeCoverageResults@2$/i,"inputs.summaryFileLocation":/^\$\(Agent\.TempDirectory\)[\/\\].*coverage\.cobertura\.xml$/i})},
+       {l:"failIfCoverageEmpty: true", t:a => a.item(STEP,{task:/^PublishCodeCoverageResults@2$/i,"inputs.failIfCoverageEmpty":"true"})},
+       {l:"Test step comes before the publish step", t:a => a.first(STEP + "[].task",/^DotNetCoreCLI@2$/i) < a.first(STEP + "[].task",/^PublishCodeCoverageResults@2$/i)}
+     ],
+     hint:`The coverlet file lands in a GUID-named folder under the results directory, so use <code>**</code> in the path.`,
+     solution:`steps:
+- task: DotNetCoreCLI@2
+  displayName: Test with coverage
+  inputs:
+    command: test
+    projects: '**/*Tests.csproj'
+    arguments: '--configuration Release --collect "XPlat Code Coverage"'
+- task: PublishCodeCoverageResults@2
+  displayName: Publish coverage
+  inputs:
+    summaryFileLocation: '$(Agent.TempDirectory)/**/coverage.cobertura.xml'
+    failIfCoverageEmpty: true`,
+     why:`DotNetCoreCLI test writes its results (and the coverlet output) under <code>$(Agent.TempDirectory)</code>. The <code>**</code> pattern finds the <code>coverage.cobertura.xml</code> in each GUID folder, and v2 merges multiple files into one report. <code>failIfCoverageEmpty</code> catches a missing collector instead of silently publishing nothing.`},
+    {id:"cc2", type:"text", lang:"yaml", title:"Require 80% diff coverage",
+     q:`Write <code>azurepipelines-coverage.yml</code> so that pull requests get a coverage status that requires <b>80%</b> of the changed lines to be covered, and per-file details are posted as a PR comment.`,
+     starter:`# azurepipelines-coverage.yml
+`,
+     checks:[
+       {l:"coverage.status.comments: on", t:a => a.h("coverage.status.comments",/^(on|true)$/i)},
+       {l:"coverage.status.diff.target: 80%", t:a => a.h("coverage.status.diff.target",/^80\s*%?$/)},
+       {l:"Nothing outside the coverage: root key", t:a => !a.h(/^(?!coverage)[^.\[]+$/)}
+     ],
+     hint:`Three levels: <code>coverage</code> → <code>status</code> → <code>comments</code> / <code>diff</code> → <code>target</code>.`,
+     solution:`coverage:
+  status:
+    comments: on
+    diff:
+      target: 80%`,
+     why:`The file lives at the repository root and configures the coverage status for every pipeline that builds a pull request in this Azure Repos repository. <code>diff.target</code> overrides the default 70%. <code>comments: on</code> adds per-file details. Remember the status only blocks completion once a branch policy requires it.`},
+    {id:"cc3", type:"match", title:"Which format comes out?",
+     q:`Match each collector to the coverage format it produces.`,
+     choices:["Cobertura XML","JaCoCo XML",".coverage (Microsoft binary)"],
+     rows:[
+       ["dotnet test --collect \"XPlat Code Coverage\" (coverlet)","Cobertura XML"],
+       ["The jacoco-maven-plugin report goal","JaCoCo XML"],
+       ["VSTest@3 with codeCoverageEnabled: true",".coverage (Microsoft binary)"],
+       ["Jest / Istanbul with the cobertura reporter","Cobertura XML"],
+       ["coverage xml from coverage.py","Cobertura XML"]
+     ],
+     hint:`Cobertura XML is used by many languages. JaCoCo is the Java tool.`,
+     why:`Coverlet, Istanbul and coverage.py all write Cobertura XML, which is why it's the most common format in pipelines. JaCoCo writes its own XML (JaCoCo reports use relative paths, which is why <code>pathToSources</code> exists). The Microsoft collector used by VSTest writes <code>.coverage</code> files. PublishCodeCoverageResults@2 accepts all three.`},
+    {id:"cc4", type:"mc", title:"Low coverage still merges",
+     q:`Your pipeline publishes coverage and <code>azurepipelines-coverage.yml</code> sets <code>diff.target: 80%</code>. A PR whose diff coverage is 40% shows a failed coverage status, yet the author completes the PR. Why, and what fixes it?`,
+     options:[
+       "The status check is advisory by default; add a branch policy on the target branch that requires the code coverage status",
+       "The file must be named azure-pipelines-coverage.yml",
+       "diff coverage only works with PublishCodeCoverageResults@1",
+       "Set comments: on so reviewers see the details"
+     ], answer:0,
+     hint:`Posting a status and requiring a status are two different things.`,
+     why:`By default the coverage status on a PR is <b>advisory</b>. To block merges, add a status check branch policy that requires the coverage status the pipeline posts. The file name is <code>azurepipelines-coverage.yml</code>, and diff coverage needs v2 of the publish task. Comments only add information.`},
+    {id:"cc5", type:"lines", title:"Coverage tab stays empty",
+     q:`This pipeline runs successfully, but the Code Coverage tab never appears. Click the <b>two</b> lines that cause it.`,
+     code:[
+       "steps:",
+       "- task: DotNetCoreCLI@2",
+       "  inputs:",
+       "    command: test",
+       "    projects: '**/*Tests.csproj'",
+       "    arguments: '--configuration Release'",
+       "- task: PublishCodeCoverageResults@2",
+       "  inputs:",
+       "    summaryFileLocation: '$(Agent.TempDirectory)/**/*.trx'"
+     ], answer:[5,8],
+     hint:`Was coverage collected at all? And is the publish task reading a coverage file?`,
+     why:`Without <code>--collect "XPlat Code Coverage"</code> (or "Code Coverage") no coverage data is produced. And a <code>.trx</code> file holds <b>test results</b>, not coverage, so the publish task should point at <code>coverage.cobertura.xml</code>. Setting <code>failIfCoverageEmpty: true</code> would have made this failure visible.`}
+  ]
+},
+
+/* ================================================================ 8 */
+{
+  group:"Measure quality",
+  title:"Analytics, flaky tests & Test Plans",
+  tag:"test analytics · flaky detection · TIA · Azure Test Plans",
+  intro:`Published results build up a history. Use it to find tests that fail often, handle <b>flaky</b> tests without hiding real bugs, run only the tests a change affects, and trace automated and manual tests back to <b>requirements</b> with Azure Test Plans.`,
+  sections:[
+    {h:"Test analytics", p:`The pipeline's <b>Analytics</b> tab has a <b>Test failures</b> report: the pass-rate trend and the top failing tests over a chosen period, filterable by branch, test file and owner. From the Tests tab of a run, you can open a test's <b>history</b> and create a <b>bug</b> from a failure.`},
+    {h:"Flaky test management", after:`<p>A <b>flaky test</b> gives different outcomes (pass/fail) without any change in code or environment. Turn on detection in <b>Project settings → Test management</b> (Pipelines section).</p>
+<div class="tablewrap"><table class="ref">
+<tr><th>Option</th><th>How it works</th></tr>
+<tr><td><b>System detection</b></td><td>A test that fails and then passes when rerun in the same pipeline run is marked flaky. Reruns come from VSTest's <b>rerun failed tests</b> or from <b>rerunning failed jobs</b>.</td></tr>
+<tr><td><b>Custom detection</b></td><td>Your own logic marks tests through the <b>Result Meta Data – Update</b> REST API (test case reference ID, flaky flag, branch).</td></tr>
+<tr><td><b>Flaky test options</b></td><td>By default flaky tests are used for troubleshooting and stay in the test summary. You can exclude them, so their results leave the pass percentage, appear under <b>Tests not reported</b>, and a flaky failure doesn't fail the pipeline.</td></tr>
+</table></div>
+<p>Flakiness is tracked <b>per branch</b> and shared by all pipelines on it. You can manually mark a test <b>Flaky</b> or <b>UnFlaky</b> from the results; the change applies to future runs.</p>`},
+    {h:"Rerun failed tests and Test Impact Analysis (VSTest@3)", code:`- task: VSTest@3
+  inputs:
+    testAssemblyVer2: '**/*Tests.dll'
+    rerunFailedTests: true
+    rerunType: basedOnTestFailurePercentage   # don't rerun if failures exceed…
+    rerunFailedThreshold: '30'                # …30% (environment probably broken)
+    rerunMaxAttempts: '3'
+    runOnlyImpactedTests: true                # Test Impact Analysis
+    runAllTestsAfterXBuilds: '50'             # periodically run everything`},
+    {h:"Azure Test Plans", after:`<div class="tablewrap"><table class="ref">
+<tr><th>Item</th><th>Purpose</th></tr>
+<tr><td><b>Test plan</b></td><td>Groups the suites for a sprint or release</td></tr>
+<tr><td><b>Static suite</b></td><td>Test cases you add by hand (folders)</td></tr>
+<tr><td><b>Requirement-based suite</b></td><td>Linked to a backlog item: its test cases are linked with <i>Tests / Tested By</i>, giving traceability</td></tr>
+<tr><td><b>Query-based suite</b></td><td>Contains whatever test cases a work item query returns (e.g. Priority = 1)</td></tr>
+<tr><td><b>Configurations</b></td><td>Run the same test case on several setups (OS, browser)</td></tr>
+<tr><td><b>Exploratory testing</b></td><td>Unscripted testing with the <b>Test &amp; Feedback</b> browser extension; create bugs with screenshots and recordings</td></tr>
+</table></div>
+<p>To make automated tests count toward a plan, <b>associate</b> the test method with a test case (from Visual Studio Test Explorer). A pipeline then runs them with VSTest <code>testSelector: testPlan</code> (plan, suites, configuration), and the outcomes are recorded against the test cases, and so against the requirements. Creating and managing test plans needs the <b>Basic + Test Plans</b> access level (or an equivalent subscription). Users with Basic access can run tests.</p>`}
+  ],
+  tip:`"Detect tests that pass on retry" → <b>flaky test detection</b> (system detection uses VSTest rerun). "Flaky failures shouldn't break the build but must stay visible" → flaky test options: <b>exclude from the test summary</b>. "Only run tests affected by the change (.NET, VSTest)" → <b>Test Impact Analysis</b> (<code>runOnlyImpactedTests</code>). "Show which requirements are tested" → <b>requirement-based suites</b> with automated tests associated to test cases.`,
+  exercises:[
+    {id:"ft1", type:"multi", title:"How flaky tests are detected",
+     q:`Which statements about flaky test management in Azure DevOps are true? <i>Select all that apply.</i>`,
+     options:[
+       "System detection marks a test flaky when it fails and then passes on a rerun within the same pipeline run",
+       "Reruns can come from VSTest's rerun-failed-tests option or from rerunning failed jobs",
+       "Custom detection reports flakiness through the Result Meta Data – Update REST API",
+       "Once marked flaky, the status applies to all pipelines on that branch",
+       "A test is automatically marked flaky after it fails in two consecutive runs",
+       "Flaky tests are deleted from the test results"
+     ], answer:[0,1,2,3],
+     hint:`Flaky means the outcome changed without any code change, and a rerun shows exactly that.`,
+     why:`System detection relies on reruns in the same run: fail then pass with the same code means flaky. Custom detection lets your own system report flakiness through the REST API. The flag is tracked per branch for every pipeline. Two consecutive failures suggest a real bug, not flakiness, and results are never deleted, only tagged.`},
+    {id:"ft2", type:"mc", title:"Don't let flaky tests break the build",
+     q:`Flaky test detection is on. Several known-flaky tests still fail the pipeline now and then. The team wants those failures to <b>stop failing the pipeline</b> while the flaky results stay visible for later fixing. What do you configure?`,
+     options:[
+       "In the flaky test options, exclude flaky tests from the test summary so they're removed from the pass percentage and shown as Tests not reported",
+       "Set failTaskOnFailedTests: false on every task",
+       "Delete the flaky tests from the repository",
+       "Add continueOnError: true to every test step"
+     ], answer:0,
+     hint:`The setting lives on the same Test management page that turns on detection.`,
+     why:`By default flaky tests stay in the test summary (for troubleshooting only). Choosing to exclude them removes flaky results from the pass percentage and lists them under <b>Tests not reported</b>, so a flaky failure doesn't fail the run, and the data stays available. <code>continueOnError</code> would hide <i>real</i> failures as well.`},
+    {id:"ft3", type:"fill", title:"Rerun failed tests", mono:true,
+     q:`Configure VSTest to rerun failed tests up to <b>3</b> attempts, but <b>not</b> to rerun when more than <b>30%</b> of the tests fail (that's probably a broken environment).`,
+     tpl:`- task: VSTest@3
+  inputs:
+    testAssemblyVer2: '**/*Tests.dll'
+    rerunFailedTests: [[0]]
+    rerunType: [[1]]
+    rerunFailedThreshold: '[[2]]'
+    rerunMaxAttempts: '[[3]]'`,
+     blanks:[["true"],["basedOnTestFailurePercentage"],["30"],["3"]],
+     hint:`The rerun type is based on either the failure percentage or the failure count.`,
+     why:`<code>rerunFailedTests: true</code> retries failed tests until they pass or the maximum number of attempts is reached. <code>basedOnTestFailurePercentage</code> with a 30% threshold skips reruns when failures are widespread. Tests that pass on a rerun feed system flaky detection.`},
+    {id:"ft4", type:"match", title:"Organize Azure Test Plans",
+     q:`Match each need to the Azure Test Plans feature.`,
+     choices:["Requirement-based suite","Static suite","Query-based suite","Test configuration","Exploratory testing (Test & Feedback)"],
+     rows:[
+       ["All test cases for user story 1234, linked so the story shows its test status","Requirement-based suite"],
+       ["A hand-picked folder of regression test cases","Static suite"],
+       ["Automatically include every test case with Priority = 1 and the tag 'checkout'","Query-based suite"],
+       ["Run the same test case on Edge and on Firefox and record both outcomes","Test configuration"],
+       ["Unscripted bug hunting in the browser, capturing screenshots and notes into a bug","Exploratory testing (Test & Feedback)"]
+     ],
+     hint:`Requirement-based = linked to a backlog item. Query-based = driven by a work item query.`,
+     why:`Requirement-based suites give traceability from the backlog item to its tests. Static suites are manual collections. Query-based suites update themselves from a query. Configurations multiply a test across environments. The Test &amp; Feedback extension supports exploratory testing.`},
+    {id:"ft5", type:"order", title:"Trace a requirement to automated results",
+     q:`Put the steps in order so a user story shows the results of its <b>automated</b> tests.`,
+     items:[
+       "Create the user story in Azure Boards",
+       "Create a requirement-based suite for the story and add test cases",
+       "Associate each automated test method with its test case from Visual Studio Test Explorer",
+       "Run the tests from the test plan in a pipeline (VSTest with testSelector: testPlan)",
+       "Review the outcomes recorded against the test cases and the story"
+     ],
+     hint:`You need the requirement and its test case before you can associate code with it.`,
+     why:`The chain is requirement → test case (requirement-based suite) → associated automated test → run from the plan → results recorded on the test cases. That gives auditors the evidence that each requirement was tested and with what result.`},
+    {id:"ft6", type:"mc", title:"Run only what changed",
+     q:`A .NET solution has 6,000 MSTest tests that take 45 minutes. Most commits touch a small area. You want CI builds to run only the tests affected by each change, but still run everything regularly. What do you use?`,
+     options:[
+       "VSTest@3 with runOnlyImpactedTests: true (Test Impact Analysis) and runAllTestsAfterXBuilds",
+       "A path filter on the CI trigger",
+       "strategy: parallel: 10",
+       "testFiltercriteria: Priority=1 on every build"
+     ], answer:0,
+     hint:`The feature maps tests to the source code they exercise.`,
+     why:`<b>Test Impact Analysis</b> in VSTest selects the tests related to the changed code and periodically runs the full suite (<code>runAllTestsAfterXBuilds</code>, default 50) to refresh its mapping. Path filters only decide whether a build starts. Parallelism speeds up the full run but doesn't select tests, and a priority filter ignores what actually changed.`}
+  ]
+},
+/* ================================================================ 9 */
+{
+  group:"Performance & GitHub",
+  title:"Load testing with Azure Load Testing",
+  tag:"JMeter · Locust · fail criteria · AzureLoadTest@1 · azure/load-testing",
+  intro:`<b>Azure Load Testing</b> is a fully managed service that generates high-scale load from Azure using a <b>JMeter</b> or <b>Locust</b> script, or simple <b>URL-based</b> requests. In CI/CD you keep the script and a YAML configuration in the repository and let the pipeline run the test after each deployment to a production-like environment. <b>Fail criteria</b> turn the result into a pass/fail gate.`,
+  sections:[
+    {h:"The test configuration file", file:"loadtest/config.yaml", code:`version: v0.1
+testId: checkout-api            # 2-50 chars, a-z 0-9 _ -
+displayName: Checkout API load test
+testType: JMX                   # JMX | Locust | URL
+testPlan: checkout.jmx          # the script (relative to this file)
+engineInstances: 2              # parallel load engines
+failureCriteria:
+  - avg(response_time_ms) > 300
+  - percentage(error) > 5
+  - GetCart: p90(latency) > 200 # criterion for one request only
+autoStop:
+  errorPercentage: 80           # stop early if >80% errors…
+  timeWindow: 60                # …within a 60-second window`,
+     after:`<div class="tablewrap"><table class="ref">
+<tr><th>Client metric</th><th>Aggregates</th><th>Condition</th></tr>
+<tr><td><code>response_time_ms</code></td><td>avg, min, max, pNN (e.g. p90, p95, p99)</td><td>&gt; or &lt;</td></tr>
+<tr><td><code>latency</code></td><td>avg, min, max, pNN</td><td>&gt; or &lt;</td></tr>
+<tr><td><code>error</code></td><td>percentage</td><td>&gt;</td></tr>
+<tr><td><code>requests_per_sec</code></td><td>avg</td><td>&gt; or &lt;</td></tr>
+<tr><td><code>requests</code></td><td>count</td><td>&gt; or &lt;</td></tr>
+</table></div>
+<p>If <b>any</b> criterion is met, the test run fails. You can also define <b>server-side</b> criteria on Azure resource metrics (e.g. CPU of the app), under <code>failureCriteria.serverMetrics</code>.</p>`},
+    {h:"Run it from Azure Pipelines", code:`- task: AzureLoadTest@1           # from the Azure Load Testing Marketplace extension
+  inputs:
+    azureSubscription: 'sc-loadtest'   # ARM service connection
+    loadTestConfigFile: 'loadtest/config.yaml'
+    resourceGroup: 'rg-loadtest'
+    loadTestResource: 'lt-contoso'
+- publish: $(System.DefaultWorkingDirectory)/loadTest
+  artifact: loadTestResults
+  condition: succeededOrFailed()`,
+     p:`The task succeeds only if the run completes <b>and all fail criteria pass</b>, so a failing load test stops the stages that depend on it. The service principal needs the <b>Load Test Contributor</b> role on the load testing resource.`},
+    {h:"…or from GitHub Actions", code:`- uses: azure/login@v2
+  with:
+    client-id: \${{ secrets.AZURE_CLIENT_ID }}
+    tenant-id: \${{ secrets.AZURE_TENANT_ID }}
+    subscription-id: \${{ secrets.AZURE_SUBSCRIPTION_ID }}
+- uses: azure/load-testing@v1
+  with:
+    loadTestConfigFile: 'loadtest/config.yaml'
+    loadTestResource: lt-contoso
+    resourceGroup: rg-loadtest
+- uses: actions/upload-artifact@v4
+  if: always()
+  with:
+    name: loadTestResults
+    path: \${{ github.workspace }}/loadTest`}
+  ],
+  tip:`"Fail the release if average response time exceeds X ms or errors exceed Y%" → <b>failureCriteria</b> in the load test config (<code>avg(response_time_ms) &gt; X</code>, <code>percentage(error) &gt; Y</code>). The pipeline step is <b>AzureLoadTest@1</b> (Azure Pipelines) or <b>azure/load-testing</b> (GitHub Actions). Permission: <b>Load Test Contributor</b>.`,
+  exercises:[
+    {id:"lt1", type:"text", lang:"yaml", title:"Write the load test config",
+     q:`Write the Azure Load Testing configuration for a JMeter test:
+      <ul class="tips">
+        <li><code>version</code> <code>v0.1</code>, test ID <code>orders-api</code>, JMeter script <code>orders.jmx</code></li>
+        <li>use <b>4</b> engine instances</li>
+        <li>fail if the <b>average response time</b> is above <b>500 ms</b> or more than <b>2%</b> of requests fail</li>
+        <li>auto-stop when the error percentage exceeds <b>90</b> within a <b>60</b>-second window</li>
+      </ul>`,
+     starter:`# loadtest/config.yaml
+`,
+     checks:[
+       {l:"version: v0.1", t:a => a.h("version","v0.1")},
+       {l:"testId: orders-api", t:a => a.h("testId","orders-api")},
+       {l:"testType: JMX", t:a => a.h("testType",/^jmx$/i)},
+       {l:"testPlan: orders.jmx", t:a => a.h("testPlan",/^(\.\/)?orders\.jmx$/i)},
+       {l:"engineInstances: 4", t:a => a.h("engineInstances","4")},
+       {l:"Criterion avg(response_time_ms) > 500", t:a => a.h(/^failureCriteria(\.clientMetrics)?\[\]$/,/^avg\s*\(\s*(response_time_ms|responseTimeMs)\s*\)\s*>\s*500$/i)},
+       {l:"Criterion percentage(error) > 2", t:a => a.h(/^failureCriteria(\.clientMetrics)?\[\]$/,/^percentage\s*\(\s*error\s*\)\s*>\s*2$/i)},
+       {l:"autoStop.errorPercentage: 90 and timeWindow: 60", t:a => a.h("autoStop.errorPercentage","90") && a.h("autoStop.timeWindow","60")}
+     ],
+     hint:`Fail criteria are a list of strings like <code>aggregate(metric) &gt; threshold</code>. The error metric uses the <code>percentage</code> aggregate.`,
+     solution:`version: v0.1
+testId: orders-api
+displayName: Orders API load test
+testType: JMX
+testPlan: orders.jmx
+engineInstances: 4
+failureCriteria:
+  - avg(response_time_ms) > 500
+  - percentage(error) > 2
+autoStop:
+  errorPercentage: 90
+  timeWindow: 60`,
+     why:`The config file lets the pipeline create or update the test and run it. Each fail criterion is checked at the end of the run. If any is met the run fails, and so does the pipeline task. Auto-stop is a separate safety net that ends a run early when the app is clearly broken, so you don't pay for a useless test.`},
+    {id:"lt2", type:"text", lang:"yaml", title:"Add the load test to the pipeline",
+     q:`Write <code>steps:</code> for a job that runs after the staging deployment:
+      <ul class="tips">
+        <li>run the load test with <b>AzureLoadTest@1</b> using service connection <code>sc-loadtest</code>, config <code>loadtest/config.yaml</code>, resource group <code>rg-loadtest</code> and resource <code>lt-contoso</code></li>
+        <li>publish the <code>$(System.DefaultWorkingDirectory)/loadTest</code> folder as pipeline artifact <code>loadTestResults</code>, <b>even if the load test failed</b></li>
+      </ul>`,
+     starter:`steps:
+`,
+     checks:[
+       {l:"AzureLoadTest@1 step", t:a => a.item(STEP,{task:/^AzureLoadTest@1$/i})},
+       {l:"azureSubscription: sc-loadtest", t:a => a.item(STEP,{task:/^AzureLoadTest@1$/i,"inputs.azureSubscription":"sc-loadtest"}) || a.item(STEP,{task:/^AzureLoadTest@1$/i,"inputs.connectedServiceNameARM":"sc-loadtest"})},
+       {l:"loadTestConfigFile: loadtest/config.yaml", t:a => a.item(STEP,{task:/^AzureLoadTest@1$/i,"inputs.loadTestConfigFile":/^(\$\(System\.DefaultWorkingDirectory\)\/)?loadtest\/config\.yaml$/i})},
+       {l:"resourceGroup and loadTestResource", t:a => a.item(STEP,{task:/^AzureLoadTest@1$/i,"inputs.resourceGroup":"rg-loadtest","inputs.loadTestResource":"lt-contoso"})},
+       {l:"Publishes the loadTest folder as artifact loadTestResults", t:a => a.item(STEP,{publish:/loadTest\/?$/,artifact:"loadTestResults"}) || a.item(STEP,{task:/^PublishPipelineArtifact@1$/i,"inputs.targetPath":/loadTest\/?$/,"inputs.artifact":"loadTestResults"}) || a.item(STEP,{task:/^PublishPipelineArtifact@1$/i,"inputs.targetPath":/loadTest\/?$/,"inputs.artifactName":"loadTestResults"})},
+       {l:"…with succeededOrFailed() or always()", t:a => a.item(STEP,{publish:/loadTest/,condition:COND_ALWAYS}) || a.item(STEP,{task:/^PublishPipelineArtifact@1$/i,condition:COND_ALWAYS})}
+     ],
+     hint:`The <code>publish:</code> shortcut takes the path, with <code>artifact:</code> and <code>condition:</code> as siblings.`,
+     solution:`steps:
+- task: AzureLoadTest@1
+  inputs:
+    azureSubscription: 'sc-loadtest'
+    loadTestConfigFile: 'loadtest/config.yaml'
+    resourceGroup: 'rg-loadtest'
+    loadTestResource: 'lt-contoso'
+- publish: $(System.DefaultWorkingDirectory)/loadTest
+  artifact: loadTestResults
+  condition: succeededOrFailed()`,
+     why:`<code>AzureLoadTest@1</code> needs four inputs: the ARM service connection, the config file, and the resource group and name of the load testing resource. The task fails when a fail criterion is met, which stops the promotion to production. The artifact keeps the results (including CSV files) for analysis even when the test failed.`},
+    {id:"lt3", type:"match", title:"Read the fail criteria",
+     q:`Match each fail criterion to its meaning.`,
+     choices:[
+       "Fail if the 90th-percentile response time is above 800 ms",
+       "Fail if more than 5% of requests return errors",
+       "Fail if the system serves fewer than 100 requests per second on average",
+       "Fail if the GetOrders request's average latency exceeds 200 ms",
+       "Fail if the slowest single response took over 3 s"
+     ],
+     rows:[
+       ["<code>p90(response_time_ms) &gt; 800</code>","Fail if the 90th-percentile response time is above 800 ms"],
+       ["<code>percentage(error) &gt; 5</code>","Fail if more than 5% of requests return errors"],
+       ["<code>avg(requests_per_sec) &lt; 100</code>","Fail if the system serves fewer than 100 requests per second on average"],
+       ["<code>GetOrders: avg(latency) &gt; 200</code>","Fail if the GetOrders request's average latency exceeds 200 ms"],
+       ["<code>max(response_time_ms) &gt; 3000</code>","Fail if the slowest single response took over 3 s"]
+     ],
+     hint:`pNN is a percentile; a prefix with a colon limits the criterion to one named request.`,
+     why:`Fail criteria take the form <code>[request:] aggregate(metric) condition threshold</code>. Percentiles (p90, p95, p99) describe the tail that users feel. The error metric uses <code>percentage</code>, and throughput is <code>avg(requests_per_sec)</code>. A request name before the colon targets a single sampler in the script.`},
+    {id:"lt4", type:"mc", title:"Stop a slow release",
+     q:`A YAML pipeline deploys to Staging, runs <code>AzureLoadTest@1</code>, then deploys to Production in the next stage. Production must <b>not</b> be deployed if the 95th percentile response time under load exceeds 1 second. What do you do?`,
+     options:[
+       "Add p95(response_time_ms) > 1000 to failureCriteria in the load test config; the task then fails and the Production stage doesn't run",
+       "Add a manual approval so someone reads the load test dashboard",
+       "Set autoStop.errorPercentage to 95",
+       "Increase engineInstances until the response time drops"
+     ], answer:0,
+     hint:`Make the test itself decide pass or fail.`,
+     why:`A fail criterion makes the load test result pass/fail automatically. <code>AzureLoadTest@1</code> succeeds only if all criteria pass, so a failed criterion fails the Staging stage and the dependent Production stage is skipped. Auto-stop reacts to errors, not latency. More engines create <i>more</i> load; they don't make the app faster.`},
+    {id:"lt5", type:"multi", title:"Prerequisites for CI/CD load tests",
+     q:`What do you need to run an Azure Load Testing test from Azure Pipelines? <i>Select all that apply.</i>`,
+     options:[
+       "The Azure Load Testing extension installed in the Azure DevOps organization (it provides AzureLoadTest@1)",
+       "An Azure Resource Manager service connection whose identity has the Load Test Contributor role on the load testing resource",
+       "The test script (JMX or Locust) and the load test YAML config committed to the repository",
+       "A self-hosted agent inside the load testing resource's virtual network",
+       "The Owner role on the subscription for the pipeline identity"
+     ], answer:[0,1,2],
+     hint:`Least privilege, and the load is generated by the service, not by your agent.`,
+     why:`The task comes from a Marketplace extension. The pipeline authenticates through a service connection that needs the <b>Load Test Contributor</b> role (not Owner). The script and config live in source control so the test is versioned with the app. The load engines run in Azure Load Testing, so the agent doesn't generate load. To test private endpoints, you inject the engines into a subnet with <code>subnetId</code>.`}
+  ]
+},
+/* ================================================================ 10 */
+{
+  group:"Performance & GitHub",
+  title:"Testing in GitHub Actions",
+  tag:"matrix · artifacts · service containers · required checks",
+  intro:`GitHub Actions has no built-in Tests tab, so you build the same practices from workflow features: a <b>matrix</b> for multi-version runs, <b>artifacts</b> and job summaries for results, <b>service containers</b> for integration tests, and <b>required status checks</b> to gate pull requests.`,
+  sections:[
+    {h:"Matrix test run with results as artifacts", file:".github/workflows/test.yml", code:`name: test
+on:
+  pull_request:
+    branches: [main]
+jobs:
+  test:
+    runs-on: \${{ matrix.os }}
+    strategy:
+      fail-fast: false          # default true: cancel the others on first failure
+      max-parallel: 4
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        node: [20, 22]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: \${{ matrix.node }}
+      - run: npm ci
+      - run: npm test -- --reporters=default --reporters=jest-junit
+      - uses: actions/upload-artifact@v4
+        if: always()            # keep results when tests fail
+        with:
+          name: test-results-\${{ matrix.os }}-\${{ matrix.node }}   # unique per job
+          path: junit.xml`,
+     p:`The matrix creates one job per combination (here 4). <code>include</code> adds combinations or extra variables, and <code>exclude</code> removes some. With <code>upload-artifact@v4</code>, artifact names must be <b>unique</b> within a run, so put matrix values in the name. To show results on the run page, write Markdown to <code>$GITHUB_STEP_SUMMARY</code> or use a Marketplace test-reporter action that creates a check run with annotations.`},
+    {h:"Service containers for integration tests", code:`jobs:
+  integration:
+    runs-on: ubuntu-latest      # service containers need a Linux runner
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432           # job runs on the runner → map the port, use localhost
+        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm ci && npm run test:integration
+        env:
+          DB_HOST: localhost
+          DB_PORT: 5432`,
+     p:`If the job itself runs in a container (<code>container:</code>), it shares a Docker network with the services: reach them by their <b>label</b> as the hostname (<code>postgres</code>), with no port mapping needed.`},
+    {h:"Gate the pull request", p:`Add the test jobs as <b>required status checks</b> in a branch protection rule or repository ruleset on <code>main</code>. Then a PR can't merge until they pass.`}
+  ],
+  tip:`"Test on several Node/OS versions" → <code>strategy.matrix</code>. "Keep results when tests fail" → <code>if: always()</code> on the upload step. "Integration tests need PostgreSQL/Redis" → <b>service containers</b> (<code>localhost</code> + port mapping on the runner, or the service label from a container job). "Block merge on failing tests" → <b>required status checks</b>.`,
+  exercises:[
+    {id:"gh1", type:"text", lang:"yaml", title:"Matrix tests with uploaded results",
+     q:`Write a workflow that runs on <b>pull requests</b>:
+      <ul class="tips">
+        <li>one job <code>test</code> on <code>ubuntu-latest</code> with a matrix variable <code>node</code> of <code>20</code> and <code>22</code></li>
+        <li>steps: checkout, <code>actions/setup-node</code> using the matrix version, <code>npm ci</code>, <code>npm test</code></li>
+        <li>upload <code>test-results/</code> with <code>actions/upload-artifact@v4</code> <b>even when tests fail</b>, using an artifact name that is <b>unique per matrix job</b></li>
+      </ul>`,
+     starter:`# .github/workflows/test.yml
+`,
+     checks:[
+       {l:"Triggered by pull_request", t:a => a.h("on.pull_request") || a.h("on[]","pull_request") || a.h("on","pull_request")},
+       {l:"jobs.test runs on ubuntu-latest", t:a => a.h("jobs.test.runs-on","ubuntu-latest")},
+       {l:"Matrix node includes 20 and 22", t:a => a.h("jobs.test.strategy.matrix.node[]",/^20(\.x)?$/) && a.h("jobs.test.strategy.matrix.node[]",/^22(\.x)?$/)},
+       {l:"actions/checkout step", t:a => a.item("jobs.test.steps",{uses:/^actions\/checkout@/})},
+       {l:"setup-node uses node-version: ${{ matrix.node }}", t:a => a.item("jobs.test.steps",{uses:/^actions\/setup-node@/,"with.node-version":/^\$\{\{\s*matrix\.node\s*\}\}$/})},
+       {l:"Runs npm ci and npm test", t:a => a.h("jobs.test.steps[].run",/npm\s+ci\b/) && a.h("jobs.test.steps[].run",/npm\s+(run\s+)?test\b/)},
+       {l:"upload-artifact@v4 with path test-results", t:a => a.item("jobs.test.steps",{uses:/^actions\/upload-artifact@v4/,"with.path":/test-results/})},
+       {l:"…runs even when tests fail", t:a => a.item("jobs.test.steps",{uses:/^actions\/upload-artifact@/,if:GH_ALWAYS})},
+       {l:"…artifact name contains ${{ matrix.node }}", t:a => a.item("jobs.test.steps",{uses:/^actions\/upload-artifact@/,"with.name":/\$\{\{\s*matrix\.node\s*\}\}/})}
+     ],
+     hint:`<code>strategy.matrix.node: [20, 22]</code>. The upload step needs <code>if: always()</code> (or <code>!cancelled()</code>), and its <code>name</code> must include <code>\${{ matrix.node }}</code>.`,
+     solution:`name: test
+on:
+  pull_request:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node: [20, 22]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: \${{ matrix.node }}
+      - run: npm ci
+      - run: npm test
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results-node-\${{ matrix.node }}
+          path: test-results/`,
+     why:`The matrix runs two jobs, one per Node version. Without <code>if: always()</code> the upload step would be skipped after a failing <code>npm test</code>, which is exactly when you need the results. With <code>upload-artifact@v4</code>, two matrix jobs uploading to the same name would conflict, so the matrix value goes in the name.`},
+    {id:"gh2", type:"text", lang:"yaml", title:"Integration tests with PostgreSQL",
+     q:`Write a workflow job <code>integration</code> (trigger: <code>push</code>) that:
+      <ul class="tips">
+        <li>runs on <code>ubuntu-latest</code> (directly on the runner, no job container)</li>
+        <li>starts a <b>service container</b> labelled <code>postgres</code> from image <code>postgres:16</code> with <code>POSTGRES_PASSWORD</code> set, maps port <code>5432:5432</code> and has a <code>--health-cmd</code> option</li>
+        <li>checks out the code and runs <code>npm run test:integration</code> with env <code>DB_HOST</code> and <code>DB_PORT</code> pointing to the service</li>
+      </ul>`,
+     starter:`# .github/workflows/integration.yml
+`,
+     checks:[
+       {l:"Triggered by push", t:a => a.h("on.push") || a.h("on[]","push") || a.h("on","push")},
+       {l:"jobs.integration runs on ubuntu-latest", t:a => a.h("jobs.integration.runs-on","ubuntu-latest")},
+       {l:"No job container (tests run on the runner)", t:a => !a.h("jobs.integration.container") && !a.h("jobs.integration.container.**")},
+       {l:"services.postgres.image: postgres:16", t:a => a.h("jobs.integration.services.postgres.image",/^postgres:16(\.\d+)*$/)},
+       {l:"POSTGRES_PASSWORD is set", t:a => a.h("jobs.integration.services.postgres.env.POSTGRES_PASSWORD",/\S/)},
+       {l:"Port 5432:5432 is mapped", t:a => a.h("jobs.integration.services.postgres.ports[]",/^5432:5432$/)},
+       {l:"options include --health-cmd", t:a => a.h("jobs.integration.services.postgres.options",/--health-cmd/)},
+       {l:"Runs npm run test:integration", t:a => a.h("jobs.integration.steps[].run",/npm\s+run\s+test:integration/)},
+       {l:"DB_HOST: localhost and DB_PORT: 5432 on that step (or the job)", t:a => (a.item("jobs.integration.steps",{"env.DB_HOST":/^(localhost|127\.0\.0\.1)$/,"env.DB_PORT":"5432"})) || (a.h("jobs.integration.env.DB_HOST",/^(localhost|127\.0\.0\.1)$/) && a.h("jobs.integration.env.DB_PORT","5432"))}
+     ],
+     hint:`<code>services:</code> sits next to <code>runs-on:</code> and <code>steps:</code>. On the runner (no <code>container:</code>), the service is reached on <code>localhost</code> through the mapped port.`,
+     solution:`name: integration
+on: push
+jobs:
+  integration:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm ci
+      - run: npm run test:integration
+        env:
+          DB_HOST: localhost
+          DB_PORT: 5432`,
+     why:`Service containers give each job a fresh, disposable dependency for integration tests. The health check makes the job wait until PostgreSQL accepts connections. Because the steps run directly on the runner, they reach the container on <code>localhost</code> through the mapped port. From a container job you'd use the hostname <code>postgres</code> instead.`},
+    {id:"gh3", type:"mc", title:"Reaching the service from a container job",
+     q:`A job uses <code>container: node:22</code> and a service container labelled <code>redis</code> (image <code>redis</code>, no <code>ports:</code> mapping). How do the tests connect to Redis?`,
+     options:[
+       "Host localhost, port 6379",
+       "Host redis, port 6379",
+       "It's impossible without mapping the port to the runner",
+       "Host host.docker.internal, port 6379"
+     ], answer:1,
+     hint:`Container jobs and services share a Docker network.`,
+     why:`When the job runs in a container, GitHub puts it and its service containers on the same user-defined bridge network. The service label (<code>redis</code>) works as the hostname and all ports are reachable, so no mapping is needed. <code>localhost</code> plus a port mapping is the pattern for jobs that run directly on the runner.`},
+    {id:"gh4", type:"lines", title:"Results go missing",
+     q:`In this workflow, test results are often missing exactly when tests fail, and one of the two matrix jobs fails at the upload step. Click the <b>two</b> lines that cause this.`,
+     code:[
+       "jobs:",
+       "  test:",
+       "    runs-on: ubuntu-latest",
+       "    strategy:",
+       "      matrix:",
+       "        node: [20, 22]",
+       "    steps:",
+       "      - uses: actions/checkout@v4",
+       "      - uses: actions/setup-node@v4",
+       "        with:",
+       "          node-version: ${{ matrix.node }}",
+       "      - run: npm ci && npm test",
+       "      - uses: actions/upload-artifact@v4",
+       "        if: success()",
+       "        with:",
+       "          name: test-results",
+       "          path: test-results/"
+     ], answer:[13,15],
+     hint:`When does the upload run? And what happens when two jobs upload artifacts with the same name?`,
+     why:`<code>if: success()</code> skips the upload after a failing test step. Use <code>always()</code> or <code>!cancelled()</code>. With <code>upload-artifact@v4</code>, artifact names must be unique within a run, so the second matrix job can't upload <code>test-results</code> again. Add <code>\${{ matrix.node }}</code> to the name.`},
+    {id:"gh5", type:"mc", title:"Require tests before merge",
+     q:`In GitHub, pull requests into <code>main</code> must not be mergeable until the <code>test</code> workflow job passes. What do you configure?`,
+     options:[
+       "A branch protection rule or ruleset on main with 'Require status checks to pass' selecting the test check",
+       "A CODEOWNERS file listing the QA team",
+       "on: push for the main branch in the workflow",
+       "A repository secret named REQUIRED_CHECKS"
+     ], answer:0,
+     hint:`The workflow reports a check; something has to require it.`,
+     why:`A workflow only <b>reports</b> its result as a check. Branch protection (or a ruleset) with <b>required status checks</b> makes that check mandatory before merging. It's the GitHub equivalent of a required build validation policy in Azure Repos. CODEOWNERS controls required reviewers, not test results.`}
+  ]
+},
+/* ================================================================ 11 */
+{
+  group:"Exam practice",
+  title:"Mixed exam scenarios",
+  tag:"scenario questions across the whole topic",
+  intro:`These questions mix everything from the earlier modules, like the case-study style of the exam. For each one, decide first <b>what kind of control</b> the scenario needs: a test type, a PR gate, a release gate or check, a pipeline task, or a reporting feature. Then pick the specific setting.`,
+  sections:[
+    {h:"A complete testing strategy at a glance", lang:"text", code:`developer   ─ local unit tests, linters, pre-commit hooks
+pull request─ build validation: unit tests + coverage (diff ≥ target) + SonarQube quality gate
+merge → CI  ─ build once, publish test results + coverage, publish the artifact
+test env    ─ deploy → integration / L2 functional / UI tests (parallel agents)
+staging     ─ deploy → load test (Azure Load Testing, fail criteria)
+production  ─ approvals & checks (environment) → deploy → smoke tests
+            ─ post-deployment gate / Query Azure Monitor alerts`}
+  ],
+  tip:`Read every scenario for the words that pick the tool: <i>"pull request"</i> → build validation / status checks. <i>"before deploying" / "after deploying"</i> → pre/post-deployment gates or environment checks. <i>"changed lines"</i> → diff coverage. <i>"intermittent"</i> → flaky test management. <i>"response time under load"</i> → Azure Load Testing fail criteria.`,
+  exercises:[
+    {id:"sc1", type:"multi", title:"Coverage gate for .NET pull requests",
+     q:`Contoso uses Azure Repos and a YAML pipeline for a .NET API. Pull requests into <code>main</code> must be <b>blocked</b> unless at least <b>80% of the changed lines</b> are covered by tests. Which actions are needed? <i>Select all that apply.</i>`,
+     options:[
+       "Run the pipeline for PRs through a build validation policy on main",
+       "Collect coverage in the test step and publish it with PublishCodeCoverageResults@2",
+       "Add azurepipelines-coverage.yml with diff target 80%",
+       "Add a branch policy that requires the code coverage status",
+       "Add a Query work items gate to the release pipeline",
+       "Use PublishCodeCoverageResults@1 with codeCoverageTool: Cobertura"
+     ], answer:[0,1,2,3],
+     hint:`The PR needs a build, coverage data, a target and enforcement.`,
+     why:`Build validation runs the pipeline for every PR. The pipeline collects and publishes coverage (v2 is needed for diff coverage). The settings file raises the diff target from the default 70% to 80%. A branch policy turns the advisory status into a blocking one. Release gates act after the merge, too late for a PR rule.`},
+    {id:"sc2", type:"mc", title:"Watch staging before promoting",
+     q:`A classic release pipeline deploys to Staging, then to Production. After deploying to Staging, the release must wait and continue to Production only if no Application Insights alert rules fire. What do you configure?`,
+     options:[
+       "A post-deployment gate on the Staging stage of type Query Azure Monitor alerts, with a delay before evaluation",
+       "A pre-deployment approval on Staging",
+       "A build validation policy on main",
+       "A Query work items gate on the Staging pre-deployment conditions"
+     ], answer:0,
+     hint:`The signal is runtime health after the deployment.`,
+     why:`<b>Post-deployment gates</b> on Staging run after the deployment and decide whether the stage succeeded, so Production starts only after they pass. <b>Query Azure Monitor alerts</b> succeeds when no alert rules are active. The delay lets the app warm up and receive traffic before the first evaluation. In a YAML pipeline you'd add the same check to the production environment.`},
+    {id:"sc3", type:"mc", title:"Java results and coverage",
+     q:`A Java team builds with Maven in Azure Pipelines. They want the unit test results in the Tests tab and <b>JaCoCo</b> coverage in the Code Coverage tab, with as few tasks as possible. What do you use?`,
+     options:[
+       "Maven@4 with goals: package, publishJUnitResults: true and codeCoverageToolOption: JaCoCo",
+       "A script step running mvn package and nothing else",
+       "VSTest@3 with codeCoverageEnabled: true",
+       "PublishTestResults@2 with testResultsFormat: JaCoCo"
+     ], answer:0,
+     hint:`One task can run the build, publish JUnit results and handle coverage.`,
+     why:`The Maven task publishes Surefire JUnit results (<code>publishJUnitResults</code>, default true) and can instrument and publish coverage with <code>codeCoverageToolOption: JaCoCo</code>. VSTest is for VSTest adapters, and JaCoCo is a coverage format, not a test result format.`},
+    {id:"sc4", type:"mc", title:"A two-hour Selenium suite",
+     q:`A browser test suite (MSTest + Selenium) takes 2 hours on one Microsoft-hosted agent. You've bought 5 parallel jobs. Each run should take about a fifth of the time, with balanced slices. Which configuration?`,
+     options:[
+       "strategy: parallel: 5 on the test job, VSTest@3 with distributionBatchType: basedOnExecutionTime, browsers in headless mode",
+       "A matrix with five entries for five browsers",
+       "runInParallel: true on VSTest@3",
+       "Five separate pipelines, each with a test filter"
+     ], answer:0,
+     hint:`Spread one suite across agents, and balance by duration.`,
+     why:`<code>parallel: 5</code> starts five agent jobs, and VSTest splits the suite between them. Batching by past execution time balances the slices so they finish together. Headless browsers work on hosted (service-mode) agents. A matrix would run the whole suite five times, and <code>runInParallel</code> only uses one machine's cores.`},
+    {id:"sc5", type:"mc", title:"Performance gate before production",
+     q:`A YAML pipeline must not deploy to Production unless the API, under a simulated 1,000 concurrent users in Staging, keeps the <b>95th percentile</b> response time below 1 second and errors below 1%. What's the best design?`,
+     options:[
+       "In the Staging stage, run AzureLoadTest@1 with failureCriteria p95(response_time_ms) > 1000 and percentage(error) > 1; Production depends on Staging",
+       "Run the JMeter script on the build agent and read the console output manually",
+       "Add a Query Azure Monitor alerts check on the Production environment",
+       "Add a smoke test after the Production deployment"
+     ], answer:0,
+     hint:`The pass/fail decision should come from the load test itself, before production.`,
+     why:`Azure Load Testing generates the load at scale and evaluates the fail criteria. The task fails if either criterion is met, so the dependent Production stage doesn't run. Alerts and smoke tests are useful, but they don't measure behaviour under load before release.`},
+    {id:"sc6", type:"order", title:"Assemble the strategy",
+     q:`Order the quality activities from earliest to latest in the delivery flow.`,
+     items:[
+       "Developer runs unit tests and linters locally (pre-commit hook)",
+       "PR build validation: unit tests, diff coverage and SonarQube quality gate",
+       "CI build on main publishes test results, coverage and the build artifact",
+       "Deploy to test and run integration / UI tests on parallel agents",
+       "Deploy to staging and run the Azure Load Testing test with fail criteria",
+       "Production approvals and checks, deploy, then smoke tests",
+       "Post-deployment monitoring: Query Azure Monitor alerts"
+     ],
+     hint:`Cheapest and fastest feedback first; production signals last.`,
+     why:`Shift left: the cheapest, fastest checks run first (local, then the PR). Tests that need a deployment come after the CI build, ordered by environment. Production deployment is protected by approvals and checks, verified with smoke tests and watched afterwards. Each step is a gate the change has to pass.`}
+  ]
+}
+];
+
+/* ===================================================================
+   MINI YAML PARSER (same as the Pipelines and Flow of Work labs)
+   Turns YAML into a flat list of { path, value } entries, e.g.
+     body[0].type = textarea
+   =================================================================== */
+const toStr = t => t.reduce((s, x) => x[0] === "[" ? s + x : (s ? s + "." + x : x), "");
+
+function cleanVal(v){
+  v = (v || "").trim();
+  if (v[0] === "'"){ const m = v.match(/^'((?:[^']|'')*)'/); if (m) return m[1].replace(/''/g, "'"); }
+  if (v[0] === '"'){ const m = v.match(/^"((?:[^"\\]|\\.)*)"/); if (m) return m[1]; }
+  const ci = v.search(/(^|\s)#/);
+  return (ci >= 0 ? v.slice(0, ci) : v).trim();
+}
+
+function splitFlow(inner){
+  const out = []; let cur = "", depth = 0, q = null;
+  for (const ch of inner){
+    if (q){ cur += ch; if (ch === q) q = null; continue; }
+    if (ch === "'" || ch === '"'){ q = ch; cur += ch; continue; }
+    if ("[{(".includes(ch)) depth++;
+    if ("]})".includes(ch)) depth--;
+    if (ch === "," && depth === 0){ out.push(cur); cur = ""; continue; }
+    cur += ch;
+  }
+  if (cur.trim()) out.push(cur);
+  return out.map(s => s.trim()).filter(Boolean);
+}
+
+function parseYaml(text){
+  const lines = text.replace(/\r/g, "").split("\n");
+  const entries = [], errors = [];
+  const root = {col:-1, gt:[], it:[], kids:null};
+  const stack = [root], counters = new Map();
+  const top = () => stack[stack.length - 1];
+  const add = (gt, it, value, line) => entries.push({gt, it, gen:toStr(gt), idx:toStr(it), value, line});
+  let flagged = -1;
+  const sibling = (parent, col, ln, kind) => {
+    if (parent.kind && parent.kind !== kind && flagged !== ln){
+      flagged = ln;
+      errors.push(`Line ${ln}: this ${kind === "list" ? "list item" : "key"} sits at the same level as ${kind === "list" ? "keys" : "\"- \" list items"} under the same parent. Check the indentation.`);
+    }
+    parent.kind = parent.kind || kind;
+    if (parent.kids === null) parent.kids = col;
+    else if (parent.kids !== col && flagged !== ln)
+      errors.push(`Line ${ln}: indented ${col} spaces, but its siblings use ${parent.kids}. Items at the same level must line up exactly.`);
+  };
+  let lastScalar = null;
+
+  for (let i = 0; i < lines.length; i++){
+    const raw = lines[i], ln = i + 1;
+    if (!raw.trim() || /^\s*#/.test(raw)) continue;
+    if (/^ *\t/.test(raw)){ errors.push(`Line ${ln}: a tab is used for indentation. YAML only allows spaces.`); continue; }
+    const lineCol = raw.match(/^ */)[0].length;
+    let col = lineCol, rest = raw.slice(col).replace(/\s+$/, "");
+    if (lastScalar && col > lastScalar.col && (flagged = ln))
+      errors.push(`Line ${ln}: indented under "${lastScalar.key}" (line ${lastScalar.ln}), but that key already has a value on its own line.`);
+    lastScalar = null;
+
+    let dashNode = null;
+    while (/^-(\s|$)/.test(rest)){
+      while (stack.length > 1 && (top().col > col || (top().dash && top().col === col))) stack.pop();
+      const parent = top();
+      sibling(parent, col, ln, "list");
+      const n = counters.get(parent) ?? 0; counters.set(parent, n + 1);
+      dashNode = {col, gt:[...parent.gt, "[]"], it:[...parent.it, `[${n}]`], kids:null, dash:true};
+      stack.push(dashNode);
+      const m = rest.match(/^-\s*/)[0].length;
+      col += m; rest = rest.slice(m);
+    }
+    if (!rest) continue;
+
+    const km = /^['"]/.test(rest) ? null : rest.match(/^(.+?)\s*:(?:\s+(.*))?$/);
+    if (!km){
+      if (dashNode) add(dashNode.gt, dashNode.it, cleanVal(rest), ln);
+      else errors.push(`Line ${ln}: "${rest.slice(0, 40)}" is not a "key: value" pair or a "- item". Check for a missing colon or a missing space after it.`);
+      continue;
+    }
+
+    const key = cleanVal(km[1]) || km[1];
+    while (stack.length > 1 && top().col >= col) stack.pop();
+    const parent = top();
+    sibling(parent, col, ln, "map");
+    const gt = [...parent.gt, key], it = [...parent.it, key];
+    const rawVal = (km[2] || "").trim();
+
+    if (/^[|>][-+]?\d*\s*(#.*)?$/.test(rawVal)){
+      const body = []; let j = i + 1;
+      for (; j < lines.length; j++){
+        const l = lines[j];
+        if (!l.trim()){ body.push(""); continue; }
+        if (l.match(/^ */)[0].length > lineCol) body.push(l); else break;
+      }
+      while (body.length && !body[body.length - 1].trim()) body.pop();
+      const ind = body.filter(x => x.trim()).map(x => x.match(/^ */)[0].length);
+      const min = ind.length ? Math.min(...ind) : 0;
+      if (!body.length) errors.push(`Line ${ln}: "${key}: ${rawVal}" starts a multi-line block, but no indented lines follow.`);
+      add(gt, it, body.map(x => x.slice(min)).join("\n"), ln);
+      i = j - 1;
+      continue;
+    }
+
+    const quoted = /^['"]/.test(rawVal);
+    const v = cleanVal(rawVal);
+    if (v === "" && !quoted){
+      stack.push({col, gt, it, kids:null});
+      add(gt, it, "", ln);
+    } else if (!quoted && /^\[.*\]$/.test(v)){
+      add(gt, it, "", ln);
+      splitFlow(v.slice(1, -1)).forEach((x, k) => add([...gt, "[]"], [...it, `[${k}]`], cleanVal(x), ln));
+      lastScalar = {col, key, ln};
+    } else if (!quoted && /^\{.*\}$/.test(v)){
+      add(gt, it, "", ln);
+      splitFlow(v.slice(1, -1)).forEach(pair => {
+        const pm = pair.match(/^(.+?)\s*:\s*(.*)$/);
+        if (pm) add([...gt, cleanVal(pm[1])], [...it, cleanVal(pm[1])], cleanVal(pm[2]), ln);
+      });
+      lastScalar = {col, key, ln};
+    } else {
+      add(gt, it, v, ln);
+      lastScalar = {col, key, ln};
+    }
+  }
+  return {entries, errors};
+}
+
+function globRe(p){
+  if (p instanceof RegExp) return p;
+  return new RegExp("^" + p.split(/(\*\*|\*|\[\]\?)/).map(s =>
+    s === "**" ? ".*" :
+    s === "*" ? "[^.\\[\\]]*" :
+    s === "[]?" ? "(\\[\\])?" :
+    s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("") + "$", "i");
+}
+const valMatch = (v, w) => w === undefined ? true : w instanceof RegExp ? w.test(v) : String(v).toLowerCase() === String(w).toLowerCase();
+
+function makeApi(entries, src){
+  const find = (p, w) => { const re = globRe(p); return entries.filter(e => re.test(e.gen) && valMatch(e.value, w)); };
+  return {
+    src,
+    h: (p, w) => find(p, w).length > 0,
+    count: (p, w) => find(p, w).length,
+    first: (p, w) => Math.min(Infinity, ...find(p, w).map(e => e.line)),
+    item(listPath, conds){
+      const re = globRe(listPath + "[]"), groups = new Map();
+      for (const e of entries){
+        for (let n = 1; n <= e.gt.length; n++){
+          if (e.gt[n - 1] !== "[]" || !re.test(toStr(e.gt.slice(0, n)))) continue;
+          const k = toStr(e.it.slice(0, n));
+          if (!groups.has(k)) groups.set(k, []);
+          groups.get(k).push({rel:toStr(e.gt.slice(n)), value:e.value});
+        }
+      }
+      return [...groups.values()].some(list =>
+        Object.entries(conds).every(([rp, w]) => { const r = globRe(rp); return list.some(x => r.test(x.rel) && valMatch(x.value, w)); }));
+    }
+  };
+}
+
+/* ===================================================================
+   CHECKING (pure functions, no DOM: also used by the self-test)
+   =================================================================== */
+const norm = s => String(s).trim().replace(/\s+/g, " ").toLowerCase();
+const sameSet = (a, b) => a.length === b.length && [...a].sort().join() === [...b].sort().join();
+
+// Returns {ok, results:[{l, ok, sub?}], marks}  (marks drive per-item coloring)
+function grade(ex, ans){
+  switch (ex.type){
+    case "mc": {
+      const ok = ans === ex.answer;
+      return {ok, results:[{l: ans === null || ans === undefined ? "Pick an answer first." : ok ? "Correct!" : "Not quite. Read the hint and try again.", ok}]};
+    }
+    case "multi": {
+      const sel = ans || [];
+      const missing = ex.answer.filter(i => !sel.includes(i)).length;
+      const extra = sel.filter(i => !ex.answer.includes(i)).length;
+      const ok = missing === 0 && extra === 0;
+      const r = [];
+      if (ok) r.push({l:"Correct! You found exactly the right options.", ok:true});
+      else {
+        r.push({l: missing ? `${missing} correct option${missing > 1 ? "s" : ""} not selected` : "All correct options selected", ok: !missing});
+        r.push({l: extra ? `${extra} selected option${extra > 1 ? "s are" : " is"} wrong` : "No wrong options selected", ok: !extra});
+      }
+      return {ok, results:r};
+    }
+    case "order": {
+      const seq = ans || [];
+      const marks = seq.map((it, pos) => it === pos);
+      const right = marks.filter(Boolean).length;
+      const ok = right === ex.items.length;
+      return {ok, marks, results:[{l: ok ? "Correct order!" : `${right}/${ex.items.length} items are in the right position.`, ok}]};
+    }
+    case "match": {
+      const sel = ans || [];
+      const marks = ex.rows.map((r, i) => sel[i] === r[1]);
+      const right = marks.filter(Boolean).length;
+      const ok = right === ex.rows.length;
+      return {ok, marks, results:[{l: ok ? "All matches correct!" : `${right}/${ex.rows.length} matches correct.`, ok}]};
+    }
+    case "fill": {
+      const vals = ans || [];
+      const marks = ex.blanks.map((acc, i) => acc.some(a => norm(a) === norm(vals[i] || "")));
+      const right = marks.filter(Boolean).length;
+      const ok = right === ex.blanks.length;
+      return {ok, marks, results:[{l: ok ? "All blanks correct!" : `${right}/${ex.blanks.length} blanks correct.`, ok}]};
+    }
+    case "lines": {
+      const sel = ans || [];
+      const missing = ex.answer.filter(i => !sel.includes(i)).length;
+      const extra = sel.filter(i => !ex.answer.includes(i)).length;
+      const ok = missing === 0 && extra === 0;
+      const r = ok ? [{l:"Correct! You spotted exactly the right lines.", ok:true}] : [
+        {l: missing ? `${missing} line${missing > 1 ? "s" : ""} still to find` : "You found every faulty line", ok: !missing},
+        {l: extra ? `${extra} selected line${extra > 1 ? "s are" : " is"} actually fine` : "No correct lines selected by mistake", ok: !extra}];
+      return {ok, results:r};
+    }
+    case "text": {
+      const text = String(ans || "").replace(/\r/g, "");
+      const results = [];
+      let api;
+      if (ex.lang === "yaml"){
+        const p = parseYaml(text);
+        results.push({l:"Valid YAML structure: spaces only, aligned siblings, key: value pairs", ok: p.errors.length === 0 && p.entries.length > 0, sub:p.errors});
+        api = makeApi(p.entries, text.replace(/^\s*#.*$/gm, ""));
+      } else {
+        const lines = text.split("\n").map(l => l.trim()).filter(l => l && !l.startsWith("#"));
+        api = {src:text, lines};
+      }
+      for (const c of ex.checks){
+        let ok = false;
+        try { ok = !!c.t(api); } catch (e) { ok = false; }
+        results.push({l:c.l, ok});
+      }
+      return {ok: results.every(r => r.ok), results};
+    }
+  }
+  return {ok:false, results:[]};
+}
+
+// The model answer for each exercise, in the same shape grade() expects.
+function modelAnswer(ex){
+  switch (ex.type){
+    case "mc": return ex.answer;
+    case "multi": case "lines": return ex.answer.slice();
+    case "order": return ex.items.map((_, i) => i);
+    case "match": return ex.rows.map(r => r[1]);
+    case "fill": return ex.blanks.map(b => b[0]);
+    case "text": return ex.solution;
+  }
+}
+
+// Deterministic shuffle so the starting order is stable between visits.
+function scramble(id, n){
+  let seed = 0; for (const ch of id) seed = (seed * 31 + ch.charCodeAt(0)) >>> 0;
+  const rnd = () => (seed = (seed * 1664525 + 1013904223) >>> 0) / 4294967296;
+  const a = [...Array(n).keys()];
+  for (let i = n - 1; i > 0; i--){ const j = Math.floor(rnd() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
+  if (a.every((v, i) => v === i)) a.reverse();
+  return a;
+}
+
+const ALL_EX = MODULES.flatMap(m => m.exercises);
+
+/* ===================================================================
+   HIGHLIGHTER (tiny, dependency-free)
+   =================================================================== */
+const esc = s => String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+
+function commentAt(v){
+  let q = null;
+  for (let i = 0; i < v.length; i++){
+    const ch = v[i];
+    if (q){ if (ch === q) q = null; continue; }
+    if ((ch === "'" || ch === '"') && (i === 0 || /\s/.test(v[i - 1]))){ q = ch; continue; }
+    if (ch === "#" && (i === 0 || /\s/.test(v[i - 1]))) return i;
+  }
+  return -1;
+}
+function hlValue(v){
+  const ci = commentAt(v);
+  const body = ci >= 0 ? v.slice(0, ci) : v, comment = ci >= 0 ? v.slice(ci) : "";
+  const t = body.trim();
+  let out;
+  if (/^(['"]).*\1$/.test(t)) out = `<span class="ts">${esc(body)}</span>`;
+  else if (/^[|>][-+]?\d*$/.test(t)) out = `<span class="tk">${esc(body)}</span>`;
+  else if (/^(true|false|none|null|~|-?\d+(\.\d+)?)$/i.test(t)) out = `<span class="tn">${esc(body)}</span>`;
+  else out = esc(body);
+  return out + (comment ? `<span class="tc">${esc(comment)}</span>` : "");
+}
+function hlYaml(code){
+  let blockCol = -1;
+  return code.split("\n").map(line => {
+    const ind = line.match(/^ */)[0].length;
+    if (blockCol >= 0){
+      if (!line.trim() || ind > blockCol) return esc(line);
+      blockCol = -1;
+    }
+    const [, sp, dash, rest] = line.match(/^(\s*)((?:-\s+|-$)*)(.*)$/);
+    if (rest.startsWith("#")) return esc(sp + dash) + `<span class="tc">${esc(rest)}</span>`;
+    let out = esc(sp) + (dash ? `<span class="tdash">${esc(dash)}</span>` : "");
+    const km = /^['"]/.test(rest) ? null : rest.match(/^(.+?)(\s*:)(\s+.*)?$/);
+    if (km){
+      out += `<span class="tk">${esc(km[1])}</span>${esc(km[2])}`;
+      if (km[3]){
+        const lead = km[3].match(/^\s*/)[0], val = km[3].slice(lead.length);
+        out += lead + hlValue(val);
+        if (/^[|>][-+]?\d*\s*(#.*)?$/.test(val.trim())) blockCol = ind;
+      }
+    } else out += hlValue(rest);
+    return out;
+  }).join("\n");
+}
+function hlSh(code){
+  return code.split("\n").map(line => {
+    const m = line.match(/^(\s*)(#.*)$/);
+    if (m) return esc(m[1]) + `<span class="tc">${esc(m[2])}</span>`;
+    const ci = line.search(/\s#\s/);
+    const body = ci >= 0 ? line.slice(0, ci) : line, c = ci >= 0 ? line.slice(ci) : "";
+    return esc(body).replace(/^(\s*)(git|gh|dotnet|npm|npx|mvn|python|pytest|az|docker)\b/, '$1<span class="tk">$2</span>').replace(/(\s)(--?[\w-]+)/g, '$1<span class="tt">$2</span>')
+      + (c ? `<span class="tc">${esc(c)}</span>` : "");
+  }).join("\n");
+}
+function hlText(code){
+  // highlight AB#123, #123, @mentions and trailing comments in plain text blocks
+  return code.split("\n").map(line => {
+    const ci = line.search(/\s{2,}(?=\S)/);
+    const body = ci >= 0 ? line.slice(0, ci) : line, rest = ci >= 0 ? line.slice(ci) : "";
+    const h = s => esc(s).replace(/(AB#\d+|(?:^|(?<=\s))[!#]\d+|@[\w-]+(?:\/[\w-]+)?)/g, '<span class="td">$1</span>');
+    return h(body) + (rest ? `<span class="tc">${esc(rest)}</span>` : "");
+  }).join("\n");
+}
+function highlight(code, lang){
+  if (lang === "text") return hlText(code);
+  if (lang === "sh") return hlSh(code);
+  return hlYaml(code);
+}
+function codeBlock(code, lang){
+  return `<div class="codewrap"><pre><code>${highlight(code, lang || "yaml")}</code></pre><button class="copy">Copy</button></div>`;
+}
+
+/* ===================================================================
+   UI
+   =================================================================== */
+const KIND = {mc:"Single choice", multi:"Select all that apply", order:"Put in order", match:"Match", fill:"Fill in the blanks", lines:"Spot the error", text:"Write it"};
+
+function startApp(){
+  const store = {
+    get(k, d){ try { const v = localStorage.getItem("pipeTestLab:" + k); return v === null ? d : JSON.parse(v); } catch { return d; } },
+    set(k, v){ try { localStorage.setItem("pipeTestLab:" + k, JSON.stringify(v)); } catch {} }
+  };
+  let done = store.get("done", []).filter(id => ALL_EX.some(e => e.id === id));
+  let current = Math.min(store.get("current", 0), MODULES.length - 1);
+  const $ = s => document.querySelector(s);
+  const state = {};   // exercise id → current answer
+  const modDone = m => m.exercises.filter(e => done.includes(e.id)).length;
+
+  function renderNav(){
+    let html = "", lastGroup = "";
+    MODULES.forEach((m, i) => {
+      if (m.group !== lastGroup){ html += `<div class="group">${m.group}</div>`; lastGroup = m.group; }
+      const n = modDone(m), all = n === m.exercises.length;
+      const cls = [i === current ? "active" : "", all ? "done" : ""].join(" ");
+      html += `<button class="${cls}" data-i="${i}"><span class="num">${all ? "✓" : i + 1}</span>${m.title}<span class="cnt">${n}/${m.exercises.length}</span></button>`;
+    });
+    $("#nav").innerHTML = html;
+    $("#bar").style.width = (done.length / ALL_EX.length * 100) + "%";
+    $("#ptext").textContent = `${done.length} of ${ALL_EX.length} exercises completed`;
+  }
+
+  /* ---------- per-type input rendering ---------- */
+  function bodyHtml(ex){
+    const sid = ex.id;
+    switch (ex.type){
+      case "mc": case "multi":
+        return `<div class="opts">${ex.options.map((o, i) =>
+          `<label class="opt" data-i="${i}"><input type="${ex.type === "mc" ? "radio" : "checkbox"}" name="${sid}" value="${i}"><span>${o}</span></label>`).join("")}</div>`;
+      case "order":
+        return `<ol class="order" id="ol-${sid}"></ol>`;
+      case "match":
+        return `<table class="match">${ex.rows.map((r, i) =>
+          `<tr data-i="${i}"><td>${r[0]}</td><td><select aria-label="Answer ${i + 1}"><option value="">— choose —</option>${ex.choices.map(c => `<option>${esc(c)}</option>`).join("")}</select></td></tr>`).join("")}</table>`;
+      case "fill": {
+        let k = 0;
+        const html = ex.tpl.replace(/\[\[(\d+)\]\]/g, (_, n) => {
+          const w = Math.max(6, ...ex.blanks[+n].map(b => b.length)) + 2;
+          k++; return `<input data-b="${n}" size="${w}" aria-label="Blank ${+n + 1}" autocomplete="off" spellcheck="false">`;
+        });
+        return `<div class="fill${ex.mono ? " mono" : ""}">${html}</div>`;
+      }
+      case "lines":
+        return `<div class="lines${ex.prose ? " prose" : ""}">${ex.code.map((l, i) =>
+          `<div class="ln" data-i="${i}" role="button" tabindex="0"><span class="no">${i + 1}</span><span>${esc(l) || " "}</span></div>`).join("")}</div>`;
+      case "text":
+        return `<textarea class="${ex.lang === "yaml" ? "" : "short"}" spellcheck="false" aria-label="Answer editor"></textarea>
+          <p class="edhelp">${ex.lang === "yaml" ? "Tab / Shift+Tab indent by 2 spaces · Enter keeps the indentation · " : ""}Ctrl+Enter checks your answer · your draft is saved automatically</p>`;
+    }
+  }
+
+  function solutionHtml(ex){
+    switch (ex.type){
+      case "mc": return `<p><b>Answer:</b> ${ex.options[ex.answer]}</p>`;
+      case "multi": return `<ul class="tips">${ex.answer.map(i => `<li>${ex.options[i]}</li>`).join("")}</ul>`;
+      case "order": return `<ol class="tips">${ex.items.map(t => `<li>${t}</li>`).join("")}</ol>`;
+      case "match": return `<div class="tablewrap"><table class="ref">${ex.rows.map(r => `<tr><td>${r[0]}</td><td><b>${esc(r[1])}</b></td></tr>`).join("")}</table></div>`;
+      case "fill": {
+        const html = ex.tpl.replace(/\[\[(\d+)\]\]/g, (_, n) => `<b><u>${esc(ex.blanks[+n][0])}</u></b>`);
+        return `<div class="fill${ex.mono ? " mono" : ""}">${html}</div>`;
+      }
+      case "lines": return `<p>Faulty line${ex.answer.length > 1 ? "s" : ""}: ${ex.answer.map(i => `<b>${i + 1}</b>`).join(", ")}</p>`;
+      case "text": return codeBlock(ex.solution, ex.lang === "yaml" ? "yaml" : "text");
+    }
+  }
+
+  function wireExercise(ex, root){
+    const id = ex.id;
+    const q = s => root.querySelector(s);
+    const draftKey = "draft:" + id;
+
+    if (ex.type === "mc"){
+      root.querySelectorAll("input").forEach(inp => inp.onchange = () => { state[id] = +inp.value; clearMarks(); });
+      state[id] = null;
+    }
+    if (ex.type === "multi"){
+      state[id] = [];
+      root.querySelectorAll("input").forEach(inp => inp.onchange = () => {
+        state[id] = [...root.querySelectorAll("input:checked")].map(x => +x.value); clearMarks();
+      });
+    }
+    if (ex.type === "order"){
+      state[id] = scramble(id, ex.items.length);
+      const ol = q(".order");
+      let dragFrom = null;
+      const draw = (marks) => {
+        ol.innerHTML = state[id].map((it, pos) =>
+          `<li draggable="true" data-pos="${pos}" class="${marks ? (marks[pos] ? "right" : "wrong") : ""}"><span class="pos">${pos + 1}</span><span class="txt">${ex.items[it]}</span>
+            <span class="mv"><button class="btn small" data-mv="-1" ${pos === 0 ? "disabled" : ""} aria-label="Move up">↑</button><button class="btn small" data-mv="1" ${pos === ex.items.length - 1 ? "disabled" : ""} aria-label="Move down">↓</button></span></li>`).join("");
+      };
+      const move = (from, to) => {
+        const a = state[id]; const [x] = a.splice(from, 1); a.splice(to, 0, x); draw();
+      };
+      ol.onclick = e => {
+        const b = e.target.closest("button[data-mv]"); if (!b) return;
+        const pos = +b.closest("li").dataset.pos, to = pos + +b.dataset.mv;
+        if (to >= 0 && to < ex.items.length) move(pos, to);
+      };
+      ol.addEventListener("dragstart", e => { const li = e.target.closest("li"); if (li){ dragFrom = +li.dataset.pos; e.dataTransfer.effectAllowed = "move"; try { e.dataTransfer.setData("text/plain", ""); } catch {} } });
+      ol.addEventListener("dragover", e => { if (dragFrom !== null) e.preventDefault(); });
+      ol.addEventListener("drop", e => { e.preventDefault(); const li = e.target.closest("li"); if (li && dragFrom !== null) move(dragFrom, +li.dataset.pos); dragFrom = null; });
+      ol.addEventListener("dragend", () => { dragFrom = null; });
+      root._draw = draw;
+      draw();
+    }
+    if (ex.type === "match"){
+      state[id] = ex.rows.map(() => "");
+      root.querySelectorAll("select").forEach((s, i) => s.onchange = () => { state[id][i] = s.value; s.closest("tr").className = ""; });
+    }
+    if (ex.type === "fill"){
+      state[id] = ex.blanks.map(() => "");
+      root.querySelectorAll(".fill input").forEach(inp => {
+        inp.oninput = () => { state[id][+inp.dataset.b] = inp.value; inp.className = ""; };
+        inp.onkeydown = e => { if (e.key === "Enter"){ e.preventDefault(); check(); } };
+      });
+    }
+    if (ex.type === "lines"){
+      state[id] = [];
+      const toggle = el => {
+        const i = +el.dataset.i, a = state[id];
+        if (a.includes(i)) a.splice(a.indexOf(i), 1); else a.push(i);
+        root.querySelectorAll(".ln").forEach(l => l.className = "ln" + (a.includes(+l.dataset.i) ? " sel" : ""));
+      };
+      root.querySelectorAll(".ln").forEach(el => {
+        el.onclick = () => toggle(el);
+        el.onkeydown = e => { if (e.key === "Enter" || e.key === " "){ e.preventDefault(); toggle(el); } };
+      });
+    }
+    if (ex.type === "text"){
+      const ed = q("textarea");
+      const saved = store.get(draftKey, null);
+      ed.value = saved !== null ? saved : ex.starter;
+      state[id] = ed.value;
+      const save = () => { state[id] = ed.value; store.set(draftKey, ed.value); };
+      const insert = t => {
+        ed.focus();
+        if (!document.execCommand || !document.execCommand("insertText", false, t)){
+          const s = ed.selectionStart, en = ed.selectionEnd;
+          ed.value = ed.value.slice(0, s) + t + ed.value.slice(en);
+          ed.selectionStart = ed.selectionEnd = s + t.length;
+          save();
+        }
+      };
+      ed.addEventListener("input", save);
+      ed.addEventListener("keydown", e => {
+        if (e.key === "Enter" && (e.ctrlKey || e.metaKey)){ e.preventDefault(); check(); return; }
+        if (ex.lang !== "yaml") return;
+        if (e.key === "Tab" && !e.shiftKey){ e.preventDefault(); insert("  "); return; }
+        if (e.key === "Tab" && e.shiftKey){
+          e.preventDefault();
+          const s = ed.selectionStart, ls = ed.value.lastIndexOf("\n", s - 1) + 1;
+          const n = ed.value.slice(ls, ls + 2).match(/^ {0,2}/)[0].length;
+          if (n){ ed.value = ed.value.slice(0, ls) + ed.value.slice(ls + n); ed.selectionStart = ed.selectionEnd = Math.max(ls, s - n); save(); }
+          return;
+        }
+        if (e.key === "Enter" && !e.shiftKey && !e.altKey){
+          const before = ed.value.slice(0, ed.selectionStart);
+          const line = before.slice(before.lastIndexOf("\n") + 1);
+          let ind = line.match(/^ */)[0].length;
+          const dm = line.slice(ind).match(/^(-\s+)+/);
+          if (dm && /:/.test(line)) ind += dm[0].length;
+          if (!/^\s*#/.test(line) && /(:|:\s*[|>][-+]?)\s*$/.test(line)) ind += 2;
+          e.preventDefault();
+          insert("\n" + " ".repeat(ind));
+        }
+      });
+    }
+
+    function clearMarks(){
+      root.querySelectorAll(".opt").forEach(o => o.classList.remove("right", "wrong"));
+    }
+
+    function check(){
+      const g = grade(ex, state[id]);
+      // per-item coloring
+      if (ex.type === "mc" || ex.type === "multi"){
+        clearMarks();
+        const sel = ex.type === "mc" ? (state[id] === null ? [] : [state[id]]) : state[id];
+        sel.forEach(i => root.querySelector(`.opt[data-i="${i}"]`).classList.add(
+          (ex.type === "mc" ? i === ex.answer : ex.answer.includes(i)) ? "right" : "wrong"));
+      }
+      if (ex.type === "order") root._draw(g.marks);
+      if (ex.type === "match") root.querySelectorAll(".match tr").forEach((tr, i) => tr.className = g.marks[i] ? "right" : "wrong");
+      if (ex.type === "fill") root.querySelectorAll(".fill input").forEach(inp => inp.className = g.marks[+inp.dataset.b] ? "right" : "wrong");
+      if (ex.type === "lines") root.querySelectorAll(".ln").forEach(l => {
+        const i = +l.dataset.i, sel = state[id].includes(i);
+        l.className = "ln" + (sel ? (ex.answer.includes(i) ? " right" : " wrong") : "");
+      });
+      q(".results").innerHTML = g.results.map(r =>
+        `<li class="${r.ok ? "pass" : "fail"}">${r.ok ? "✔" : "✘"} ${esc(r.l)}${(r.sub || []).map(s => `<span class="sub">↳ ${esc(s)}</span>`).join("")}</li>`).join("") +
+        (ex.type === "text" ? `<li class="${g.ok ? "pass" : "fail"}"><b>${g.results.filter(r => r.ok).length}/${g.results.length} checks passed${g.ok ? ". Nice work! 🎉" : ""}</b></li>` : "");
+      if (g.ok){
+        q(".why").style.display = "block";
+        if (!done.includes(id)){ done.push(id); store.set("done", done); renderNav(); }
+        root.classList.add("solved");
+      }
+    }
+
+    q(".checkBtn").onclick = check;
+    q(".hintBtn").onclick = () => { const h = q(".hint"); h.style.display = h.style.display === "block" ? "none" : "block"; };
+    q(".solBtn").onclick = e => {
+      const s = q(".solution"), show = s.style.display !== "block";
+      s.style.display = show ? "block" : "none";
+      q(".why").style.display = show || root.classList.contains("solved") ? "block" : "none";
+      e.target.textContent = show ? "Hide solution" : "Show solution";
+    };
+    q(".resetBtn").onclick = () => {
+      if (ex.type === "text") store.set(draftKey, null);
+      const fresh = document.createElement("section");
+      root.replaceWith(fresh);
+      buildExercise(ex, fresh);
+    };
+  }
+
+  function buildExercise(ex, el){
+    const n = ALL_EX.indexOf(ex) + 1;
+    el.className = "exercise" + (done.includes(ex.id) ? " solved" : "");
+    el.id = "ex-" + ex.id;
+    el.innerHTML = `
+      <h3>🧪 ${n}. ${ex.title} <span class="kind">${KIND[ex.type]}</span> <span class="badge">Completed</span></h3>
+      <div>${ex.q}</div>
+      ${bodyHtml(ex)}
+      <div class="btns">
+        <button class="btn primary checkBtn">Check my answer</button>
+        <button class="btn hintBtn">Hint</button>
+        <button class="btn solBtn">Show solution</button>
+        <button class="btn resetBtn">Reset</button>
+      </div>
+      <div class="hint">💡 ${ex.hint}</div>
+      <ul class="results"></ul>
+      <div class="solution"><p class="solhead">Model answer</p>${solutionHtml(ex)}</div>
+      <div class="why"><b>Why:</b> ${ex.why}</div>`;
+    wireExercise(ex, el);
+  }
+
+  function renderModule(){
+    const m = MODULES[current];
+    const sections = m.sections.map(s => `
+        <h3>${s.h}</h3>
+        ${s.p ? `<p>${s.p}</p>` : ""}
+        ${s.file ? `<div class="file">${s.file}</div>` : ""}
+        ${s.code ? codeBlock(s.code, s.lang) : ""}
+        ${s.after || ""}`).join("");
+
+    $("#content").innerHTML = `
+      <span class="tag">Module ${current + 1} of ${MODULES.length} · ${m.tag}</span>
+      <h2>${m.title}</h2>
+      <p class="lead">${m.intro}</p>
+      ${sections}
+      ${m.tip ? `<div class="note exam">🎯 <b>AZ-400 exam tip:</b> ${m.tip}</div>` : ""}
+      <h3 style="margin-top:36px">Exercises (${m.exercises.length})</h3>
+      <div id="exlist"></div>
+      <div class="navfoot">
+        <button class="btn" id="prevBtn" ${current === 0 ? "disabled" : ""}>← Previous</button>
+        <button class="btn" id="nextBtn" ${current === MODULES.length - 1 ? "disabled" : ""}>Next →</button>
+      </div>`;
+    const list = $("#exlist");
+    m.exercises.forEach(ex => { const el = document.createElement("section"); list.appendChild(el); buildExercise(ex, el); });
+    $("#prevBtn").onclick = () => go(current - 1);
+    $("#nextBtn").onclick = () => go(current + 1);
+    renderNav();
+    window.scrollTo(0, 0);
+  }
+
+  function go(i){
+    if (i < 0 || i >= MODULES.length) return;
+    current = i; store.set("current", i);
+    $("#side").classList.remove("open");
+    renderModule();
+  }
+
+  $("#nav").addEventListener("click", e => { const b = e.target.closest("button"); if (b) go(+b.dataset.i); });
+  $("#menuBtn").onclick = () => $("#side").classList.toggle("open");
+  document.addEventListener("click", e => {
+    if (!e.target.classList.contains("copy")) return;
+    const text = e.target.previousElementSibling.innerText;
+    navigator.clipboard?.writeText(text).then(() => { e.target.textContent = "Copied!"; setTimeout(() => e.target.textContent = "Copy", 1200); });
+  });
+  $("#themeBtn").onclick = () => {
+    const root = document.documentElement;
+    const dark = root.dataset.theme ? root.dataset.theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+    root.dataset.theme = dark ? "light" : "dark"; store.set("theme", root.dataset.theme);
+  };
+  $("#resetAllBtn").onclick = () => {
+    if (!confirm("Reset all progress and saved drafts for this lab?")) return;
+    done = []; store.set("done", done);
+    ALL_EX.filter(e => e.type === "text").forEach(e => store.set("draft:" + e.id, null));
+    renderModule();
+  };
+  const t = store.get("theme", null); if (t) document.documentElement.dataset.theme = t;
+
+  renderModule();
+}
+
+if (typeof document !== "undefined" && document.getElementById("content")) startApp();
+</script>
+</body>
+</html>
